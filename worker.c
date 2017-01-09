@@ -13,12 +13,17 @@
 
  pthread_t tid[2];
 
- char buffer[SIZE_BUFFER_RECV];
+ char command[SIZE_BUFFER_RECV];
+ char buffer[COMMAND_SIZE];
+ 
  extern int  port_weblogi; 
  extern int  port_pppx; 
  extern char* ip_pppx;
 
  static struct list* list_commands=NULL;
+ static struct list* list_ack     =NULL;
+
+ int sock_command_pppx=0;
 
  void* listener(void* param)
  {
@@ -26,7 +31,6 @@
    printf("\r\n ip_pppx:%s port_pppx:%d port_weblogi:%d  \r\n",ip_pppx,port_pppx,port_weblogi);
    
    int sockfd, newsockfd, portno, clilen;
-   char buffer[COMMAND_SIZE];
    struct sockaddr_in serv_addr, cli_addr;
    int n, pid;
    
@@ -55,13 +59,24 @@
 	list_commands=(struct list*)creer_list();
 	
    if (list_commands==NULL) {
-      printf("\r\nERROR on creating list\r\n");
+      printf("\r\nERROR on creating list<commandes>\r\n");
       exit(1);
    }
   
-   struct list* _list=list_commands;   
-   init_list(_list);   
+   struct list* _list_c=list_commands;   
+   init_list(_list_c);   
  
+   if (list_ack==NULL)
+	list_ack=(struct list*)creer_list();
+	
+   if (list_ack==NULL) {
+      printf("\r\nERROR on creating list<ack>\r\n");
+      exit(1);
+   }
+  
+   struct list* _list_a=list_ack;   
+   init_list(_list_a);
+   
    /* Now start listening for the clients, here
     *       * process will go in sleep mode and will wait
     *             * for the incoming connection
@@ -71,7 +86,8 @@
    listen(sockfd,5);
    clilen = sizeof(cli_addr);
 
-   int nb_connect=0;
+   int nb_connect=1;
+   int searchNode=0; //noeud de recherche du ACK
    while (true) 
    {
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
@@ -84,79 +100,110 @@
       
       while(1)
       {
-      	doprocessing(newsockfd);
+      	doprocessing_collector(newsockfd,newsockfd,&searchNode);
       }
 
-      printf("\r\nfin proccessing<collector>: %d\r\n",nb_connect);
+      printf("\r\nfin proccessing<collector>: %d\r\n",nb_connect++);
 		
    } /* end of while */
  }
 
+ //reçoit les commandes de weblogi
+ //envoi les ack de  pppx à weblogi
+ void doprocessing_collector (int sock_command,int sock_ack_weblogi,int* searchNode /* prochain ACK*/) {
 
- void doprocessing (int sock) {
    int n=0;
-   bzero(buffer,SIZE_BUFFER_RECV);
-   n = read(sock,buffer,SIZE_BUFFER_RECV);
+   //bzero(command,SIZE_BUFFER_RECV);
+   printf("\r\nThread listener<collector> waiting for a New command\r\n");
+   memset(command, '0',COMMAND_SIZE);
+   n = read(sock_command,command,COMMAND_SIZE);
    
    if (n < 0) {
       printf("\r\nERROR reading from socket\r\n");
       exit(1);
    }
-   
-   struct list* _list=list_commands;
+   command[n]='\0';
+   struct list* _list_c=list_commands; /* contient toutes les commandes en provenance de weblogi */
+   struct list* _list_a=list_ack;      /* contient tous les ack en provenance du meuble via la passerelle */
    struct noeud* node=(struct noeud*)creer_noeud();
-   init_data(node,buffer,_list->count);   
-   if (_list!=NULL)
+   init_command(node,command,_list_c->count);   
+   if (_list_c!=NULL)
    {
-   	pthread_mutex_lock(&(_list->mutex));
+   	pthread_mutex_lock(&(_list_c->mutex));
 	//fill the list of command 
-   	ajouter_noeud(_list,node);	  
+   	ajouter_noeud(_list_c,node);	  
+   	printf("\r\nThread listener<collector>	add command :%s\r\n",command);
 	//pthread_cond_signal(&(_list->condition));  
-	pthread_mutex_unlock(&(_list->mutex));
-	sleep(2);
+	pthread_mutex_unlock(&(_list_c->mutex));
+	sleep(1);
    }
 
-   if (strcmp("#E00007A13A000000001ZZ;",buffer)!=0)
+   if (strcmp(RE_INIT,command)!=0)
    {
    	//devrait être le retour de la passerelle stocké dans une  liste adaptée
-	n = write(sock,"#R0A0010000;",12);
+	pthread_mutex_lock(&(_list_a->mutex));
+	//pthread_cond_wait(&(_list->condition),&(_list->mutex));
+   	printf("\r\nThread listener<collector>	TRY to extract  ACK no:%d\r\n",*searchNode);
+	struct noeud* _noeud=extractMessage(_list_a,searchNode/* prochain ACK*/);
+	pthread_mutex_unlock(&(_list_a->mutex));
+	if (_noeud!=NULL)
+	{
+		if (_noeud->data!=NULL)
+		{
+			if (_noeud->data->ack!=NULL)
+			{
+				if (sock_ack_weblogi!=0)
+				{
+					n = write(sock_ack_weblogi,_noeud->data->ack,ACK_SIZE);
+   					printf("\r\nThread listener<collector>	sent ACK[%d]====> %s <==== to WEBLOGI\r\n",*searchNode,_noeud->data->ack);
+				}
+			}
+		}
+	}
+   	else { printf("\r\nThread listener<collector>  ACK[%d] DO NOT exist Try again in 1 sec \r\n",*searchNode); /*sleep(1);*/}
    
    	if (n < 0) {
       		printf("\r\nERROR writing to socket\r\n");
       	exit(1);
    	}
    }
+	sleep(1);
  }
-	
+
+ // envoi les commandes à pppx
+ // réceptonne les ACK de pppx
+ // les empile	
  void* sender(void* param)
  {
   
-  int sockfd=0;
-  while (init_socket_pppx(&sockfd)!=0)
+  while (init_socket_pppx(&sock_command_pppx)!=0)
 	sleep(1);
 
-   printf("\r\nThread SENDER<collector>	 created successfully<sockfd_pppx:%d>\r\n",sockfd);
-   struct list* _list=list_commands;
-   int index=0;
-   if (_list!=NULL)
+   printf("\r\nThread SENDER<collector>	 created successfully<sockfd_pppx:%d>\r\n",sock_command_pppx);
+   struct list* _list_c=list_commands;
+   struct list* _list_a=list_ack;
+   int index=0; /* index prochaine commande à envoyer à pppx*/
+   if (_list_c!=NULL && _list_a!=NULL)
    {
    	while(true)
 	{
-		pthread_mutex_lock(&(_list->mutex));
+		pthread_mutex_lock(&(_list_c->mutex));
 		//pthread_cond_wait(&(_list->condition),&(_list->mutex));
-		struct noeud* _noeud=extractMessage(_list,index);
-		pthread_mutex_unlock(&(_list->mutex));
+		struct noeud* _noeud=extractMessage(_list_c,&index /* prochaine commande */);
+		pthread_mutex_unlock(&(_list_c->mutex));
 		//printf("\r\nThread SENDER	runs \r\n");
 		if (_noeud!=NULL) {
 			//crée un message groupé
 			//dialogue avec pppx
 			if (_noeud->data!=NULL) 
+			{
+				printf("\r\n collector TRY to send to pppx:list[%d],command:%s\r\n",index,_noeud->data->commande);
 				if (_noeud->data->commande!=NULL)
 				{ 
-					sendreceave(sockfd,_noeud->data->commande);
-					printf("\r\n collector sent to pppx:list[%d]=%s\r\n",index,_noeud->data->commande);
+					sendreceave(sock_command_pppx,_noeud->data->commande,_list_a);
+					printf("\r\n collector sent command to pppx:list[%d]=%s\r\n",index,_noeud->data->commande);
 				}
-			index++;
+			}
 		}
 		sleep(1);
 	}
@@ -189,30 +236,43 @@
  }
 
 
-int sendreceave(int sockfd,char* message)
+int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */)
 {
    	int n = 0;
-    	char recvBuff[1024];
+    	char recvBuff[ACK_SIZE];
 
-        if ((send(sockfd,message,strlen(message) ,0))== -1) {
+        if ((send(sockfd,command,strlen(command) ,0))== -1) {
             printf("\r\nFailure Sending Message\n");
     	    return 1;
 	}
     	else {
-         printf("\r\nMessage being<collector to pppx>  sent: %s\n",message);
+         printf("\r\ncommand being sent <collector to pppx> : %s\n",command);
     	}
-	if (strcmp(message,"#E00007A13A000000001ZZ;")!=0)
+	
+	if (strcmp(command,RE_INIT)!=0)
 	{	
-    		memset(recvBuff, '0',sizeof(recvBuff));
-	    	n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
+    		memset(recvBuff, '0',ACK_SIZE);
+	    	n = read(sockfd, recvBuff, ACK_SIZE-1);
        		recvBuff[n] = 0;
-	        printf("\r\nMessage Receaved from pppx:%s\r\n",recvBuff);
+	        printf("\r\n ACK Receaved from pppx ==========> %s <==========\r\n",recvBuff);
                 //le message reçu doit être empilé sur une liste spécifique et retourné par doprocessing à weblogi  
     		if(n < 0)
     		{
         		printf("\n Read error \n");
     		}
- 	}
+   
+   		struct noeud* node=(struct noeud*)creer_noeud();
+   		init_ack(node,recvBuff,_list->count);   
+   		if (_list!=NULL)
+   		{
+   			pthread_mutex_lock(&(_list->mutex));
+			//fill the list of command 
+   			ajouter_noeud((_list),node);	  
+			//pthread_cond_signal(&(_list->condition));  
+			pthread_mutex_unlock(&(_list->mutex));
+			sleep(1);
+   		}
+ 	}	
 	return 0;
  }
 

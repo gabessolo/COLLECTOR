@@ -31,7 +31,7 @@
  bool   init_noeud(struct noeud* _noeud,char *message,int index);
  bool   aff_list(struct list* _list);
  int    init_list(struct list* _list);
- struct noeud* extractMessage(struct list* _list,int searchNode);
+ struct noeud* extractMessage(struct list* _list,int* searchNode);
 
 
 #endif /* __LIST__H__ */

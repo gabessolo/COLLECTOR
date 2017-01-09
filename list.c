@@ -36,7 +36,7 @@
 		//mise à jour du nombre de noeud total
 		_list->count++;
 	}           
-        printf("\r\nadd  list[%d][noeud:%p][index:%d][commande:%s]\r\n",_list->count,_noeud,_noeud->index,_noeud->data->commande);
+        printf("\r\nadd  list(%p)[count:%d][noeud:%p][index:%d][commande/ack:%s]\r\n",_list,_list->count,_noeud,_noeud->index,_noeud->data->commande);
 	return true;
  }
 
@@ -101,7 +101,7 @@
 	return true;
  }	
 
- struct noeud* extractMessage(struct list* _list,int searchNode)
+ struct noeud* extractMessage(struct list* _list,int* searchNode)
  {
 	if (_list==NULL /*|| searchNode==NULL*/)
 		return NULL;
@@ -119,18 +119,23 @@
 		curseur=_list->curseur->suiv;
 		dernier_noeud=_list->curseur->suiv;
 	}
-	else if (searchNode==0) _noeud=curseur;
+	else if (*searchNode==0) 
+	{
+		_noeud=curseur;
+		 *searchNode=*searchNode+1;
+	}	
 	
 	//printf("\r\nlooking for %d\r\n",searchNode);
 	if (_list->count > 1)
 	do
 	{
 		//printf("\r\nlooking for %d==%d\r\n",searchNode,curseur->index);
-		if (searchNode==curseur->index)
+		if (*searchNode==curseur->index)
 		{
 		    _noeud=curseur;
 		   
-		    printf("\r\nSearch OK  %d==%d\r\n",searchNode,curseur->index);
+		    //printf("\r\nSearch OK  %d==%d\r\n",*searchNode,curseur->index);
+		    *searchNode=*searchNode+1;	
                     break; 
 		    
 		}

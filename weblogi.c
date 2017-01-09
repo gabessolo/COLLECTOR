@@ -12,7 +12,7 @@
 
   const char* scenario[]={
 	"#E00007A13A000000001ZZ;",
-	"#E000011231;",
+	"#E000011231;"/*,
 	
 	"#E00007A13A000000001ZZ;",
 	"#E000011231;",
@@ -258,7 +258,7 @@
 	"#E000171231;",
 	"#E000181231;",
 	"#E000191231;",
-	"#E000201231;"
+	"#E000201231;"*/
   };
 
   char message[SIZE_BUFFER_SENT];  //20 messages max + message extinction
@@ -327,26 +327,26 @@
          printf("\r\nMessage being  sent: %s\n",message);
     	}
 
-	if (strcmp(message,scenario[0])!=0)
+	if (strcmp(message,RE_INIT)!=0)
 	{	
     		memset(recvBuff, '0',sizeof(recvBuff));
 	    	n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
        		recvBuff[n] = 0;
-	        printf("\r\nMessage Receaved:%s\r\n",recvBuff);
+	        printf("\r\n<pppx> ACK Receaved:%s\r\n",recvBuff);
 
     		if(n < 0)
     		{
         		printf("\n Read error \n");
     		}
- 	}else
-		sleep(2);
+ 	}//else
+	//	sleep(2);
 
 
         index++;
         if (index>=nb_case)
        	 index=0;
 
-	sleep(1);
+	//sleep(1);
     }
     close(sockfd);
 

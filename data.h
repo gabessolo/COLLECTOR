@@ -21,6 +21,7 @@
  } data;
 
  struct data*  creer_data();
- void init_data(struct noeud* _noeud,char* message,int index);
+ void init_command(struct noeud* _noeud,char* message,int index);
+ void init_ack(struct noeud* _noeud,char* message,int index);
 
  #endif  /* __DATA__H__ */

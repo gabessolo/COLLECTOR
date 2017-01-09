@@ -13,9 +13,11 @@
  #define IP_PASS		(char*)"192.168.38.102"
  #define PORT_PASS		(int)39000
 
- #define COMMAND_SIZE 		23
- #define ACK_SIZE     		12
- #define SIZE_BUFFER_RECV	2630 
+ #define COMMAND_SIZE 		(23+1)
+ #define ACK_SIZE     		(12+1)
+ #define SIZE_BUFFER_RECV	COMMAND_SIZE 
  #define SIZE_BUFFER_SENT	SIZE_BUFFER_RECV 
+
+ #define RE_INIT               "#E00007A13A000000001ZZ;"
 
 #endif /* __DEFS__H__ */

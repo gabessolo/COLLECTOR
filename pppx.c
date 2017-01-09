@@ -11,10 +11,12 @@
 
  pthread_t tid[2];
 
- char buffer[SIZE_BUFFER_RECV];
+ char command[SIZE_BUFFER_RECV];
  extern int  port_pppx; 
 
  static struct list* list_commands=NULL;
+ static struct list* list_ack=NULL;
+ static char ack[ACK_SIZE];
 
  void* listener(void* param)
  {
@@ -51,13 +53,24 @@
 	list_commands=(struct list*)creer_list();
 	
    if (list_commands==NULL) {
-      printf("\r\nERROR on creating list\r\n");
+      printf("\r\nERROR on creating list<COMMAND>\r\n");
       exit(1);
    }
   
-   struct list* _list=list_commands;   
-   init_list(_list);   
+   struct list* _list_c=list_commands;   
+   init_list(_list_c);   
  
+   if (list_ack==NULL)
+	list_ack=(struct list*)creer_list();
+	
+   if (list_ack==NULL) {
+      printf("\r\nERROR on creating list<ACK>\r\n");
+      exit(1);
+   }
+  
+   struct list* _list_a=list_ack;   
+   init_list(_list_a);
+   
    /* Now start listening for the clients, here
     *       * process will go in sleep mode and will wait
     *             * for the incoming connection
@@ -68,6 +81,7 @@
    clilen = sizeof(cli_addr);
 
    int nb_connect=1;
+   int searchNode=0; /* recherche la prochaine commande et en déduit la réponse dynamiquement */
    while (true) 
    {
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
@@ -80,7 +94,7 @@
       
       while(1)
       {
-      	doprocessing(newsockfd);
+      	doprocessing_pppx(newsockfd,&searchNode);
       }
 
       printf("\r\nfin proccessing<pppx>: %d\r\n",nb_connect);
@@ -89,32 +103,78 @@
  }
 
 
- void doprocessing (int sock) {
+ void doprocessing_pppx (int sock,int* searchNode) {
    int n=0;
-   bzero(buffer,SIZE_BUFFER_RECV);
-   n = read(sock,buffer,SIZE_BUFFER_RECV);
+   bzero(command,SIZE_BUFFER_RECV);
    
+   printf("\r\nThread listener<pppx> Waiting for a New command\r\n");
+   n = read(sock,command,SIZE_BUFFER_RECV);
+   
+   printf("\r\nThread listener<pppx> New command receaved:%s \r\n",command);
    if (n < 0) {
       printf("\r\nERROR reading from socket\r\n");
       exit(1);
    }
    
-   //struct list* _list=list_commands;
-   //struct noeud* node=(struct noeud*)creer_noeud();
-   //init_data(node,buffer,_list->count);   
-   //if (_list!=NULL)
-   //{
-   //	pthread_mutex_lock(&(_list->mutex));
-//	//fill the list of command 
-   //	ajouter_noeud(_list,node);	  
-//	//pthread_cond_signal(&(_list->condition));  
-//	pthread_mutex_unlock(&(_list->mutex));
-//	sleep(2);
-  // }
+   struct list* _list_c=list_commands;
+   struct list* _list_a=list_ack;
 
-   if (strcmp("#E00007A13A000000001ZZ;",buffer)!=0)
+   struct noeud* _noeud_command=(struct noeud*)creer_noeud();
+   init_command(_noeud_command,command,_list_c->count);   
+   if (_list_c!=NULL)
    {
-   	n = write(sock,"#R0A0010000;",12);
+   	//pthread_mutex_lock(&(_list_c->mutex));
+	//fill the list of command 
+   	ajouter_noeud(_list_c,_noeud_command);	  
+        printf("\r\nThread listener<pppx> add command :%s \r\n",command);
+	//pthread_cond_signal(&(_list->condition));  
+	//pthread_mutex_unlock(&(_list_c->mutex));
+	//sleep(2);
+   }
+
+   if (strcmp(RE_INIT,command)!=0)
+   {
+        //printf("\r\nThread listener<pppx> [0]\r\n");
+	if (_noeud_command!=NULL){
+        	//printf("\r\nThread listener<pppx> [1] \r\n");
+		if (_noeud_command->data!=NULL)
+		{
+        	//	printf("\r\nThread listener<pppx> [2] \r\n");
+			if (_noeud_command->data->commande)
+			{
+			       //on construit une réponse dynamiquement en fonction de la commande
+			       //et on la conserve dans la liste des ack ... en  réalité cela fait doublon
+			       //
+   			       struct noeud* _noeud_ack=(struct noeud*)creer_noeud();
+
+			       ack[0] ='#';
+                               ack[1] ='R';
+                               ack[2] ='0';
+                               ack[3] ='A';
+                               ack[4] =command[4];
+                               ack[5] =command[5];
+                               ack[6] =command[6];
+                               ack[7] =command[7];
+                               ack[8] =command[8];
+                               ack[9] =command[9];
+                               ack[10]=command[10];
+                               ack[11]=';';
+                               ack[12]='\0';
+			
+                    	       init_ack(_noeud_ack,ack,_list_a->count);   
+   			       //pthread_mutex_lock(&(_list_a->mutex));
+   			       ajouter_noeud(_list_a,_noeud_ack);	  
+				
+			       n = write(sock,/*_noeud_ack->data->ack*/"#R0A0011231;",ACK_SIZE);
+        		       if (n==(ACK_SIZE)) printf("\r\nThread listener<pppx> sent ACK <<<<<<<< %s >>>>>>>>>>> \r\n",_noeud_ack->data->ack);
+				
+			       //fill the list of command 
+			       //pthread_cond_signal(&(_list->condition));  
+			       //pthread_mutex_unlock(&(_list_a->mutex));
+				
+			}
+		}
+	}
    
    	if (n < 0) {
       		printf("\r\nERROR writing to socket\r\n");
@@ -126,22 +186,6 @@
  void* sender(void* param)
  {
    printf("\r\nThread SENDER<pppx>	 created successfully\r\n");
-   struct list* _list=list_commands;
-   int index=0;
-   if (_list!=NULL)
-   {
-   	while(true)
-	{
-		pthread_mutex_lock(&(_list->mutex));
-		//pthread_cond_wait(&(_list->condition),&(_list->mutex));
-		struct noeud* _noeud=extractMessage(_list,index);
-		pthread_mutex_unlock(&(_list->mutex));
-		//printf("\r\nThread SENDER	runs \r\n");
-		if (_noeud!=NULL) printf("\r\n extracted<pppx>:list[%d]=%s\r\n",index++,_noeud->data->commande);
-		sleep(1);
-	}
-   }
-
  }
 
  void  creat_threads(char* ip,int port)
