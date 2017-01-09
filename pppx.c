@@ -85,16 +85,16 @@
    while (true) 
    {
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-      printf("\r\nnb_connect<pppx>: %d\r\n",nb_connect++);
+      printf("\r\nNew Connection <pppx>: %d\r\n",nb_connect++);
 		
       if (newsockfd < 0) {
          printf("\r\nERROR on accept\r\n");
          exit(1);
       }
-      
-      while(1)
+      bool clientDiscon=false;
+      while(clientDiscon==false)
       {
-      	doprocessing_pppx(newsockfd,&searchNode);
+      	doprocessing_pppx(newsockfd,&searchNode,&clientDiscon);
       }
 
       printf("\r\nfin proccessing<pppx>: %d\r\n",nb_connect);
@@ -103,13 +103,22 @@
  }
 
 
- void doprocessing_pppx (int sock,int* searchNode) {
+ void doprocessing_pppx (int sock,int* searchNode,bool* clientDiscon) {
    int n=0;
    bzero(command,SIZE_BUFFER_RECV);
    
    printf("\r\nThread listener<pppx> Waiting for a New command\r\n");
-   n = read(sock,command,SIZE_BUFFER_RECV);
    
+   do {
+    n = read(sock,command,COMMAND_SIZE);
+    command[n]='\0';
+    if (n==0) {*clientDiscon=true; return;}
+	
+    printf("\r\nThread listener<pppx> Receaved a New command from Collector %s[%d]\r\n",command,n);
+    sleep(T_READ);
+   }
+   while(n!=(COMMAND_SIZE-1) && n!=(ACK_SIZE-1));
+
    printf("\r\nThread listener<pppx> New command receaved:%s \r\n",command);
    if (n < 0) {
       printf("\r\nERROR reading from socket\r\n");
@@ -120,6 +129,7 @@
    struct list* _list_a=list_ack;
 
    struct noeud* _noeud_command=(struct noeud*)creer_noeud();
+   init_noeud(_noeud_command,_list_c->count);   
    init_command(_noeud_command,command,_list_c->count);   
    if (_list_c!=NULL)
    {
@@ -146,6 +156,7 @@
 			       //et on la conserve dans la liste des ack ... en  réalité cela fait doublon
 			       //
    			       struct noeud* _noeud_ack=(struct noeud*)creer_noeud();
+                    	       init_noeud(_noeud_ack,_list_a->count);   
                     	       init_ack(_noeud_ack,"#0123456789;",_list_a->count);   
 
 			      _noeud_ack->data->ack[0] ='#';

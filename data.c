@@ -12,11 +12,8 @@
 		return;
 
 	(_noeud)->index=index;
-	struct data* _data=(struct data*)creer_data();
-
-	(_noeud)->data=_data;
-	
-	
+ 
+        struct data* _data=_noeud->data;
 	if (_data==NULL || message==NULL)
 		return NULL;
  	
@@ -30,10 +27,7 @@
 		return;
 
 	(_noeud)->index=index;
-	struct data* _data=(struct data*)creer_data();
-
-	(_noeud)->data=_data;
-	
+        struct data* _data=_noeud->data;
 	
 	if (_data==NULL || message==NULL)
 		return NULL;

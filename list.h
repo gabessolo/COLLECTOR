@@ -28,7 +28,7 @@
  bool   ajouter_noeud(struct list* _list,struct noeud* _noeud);
  bool   supprimer(struct list* _list,struct noeud* _noeud);
  int    compter_noeud(struct list* _list);
- bool   init_noeud(struct noeud* _noeud,char *message,int index);
+ bool   init_noeud(struct noeud* _noeud,int index);
  bool   aff_list(struct list* _list);
  int    init_list(struct list* _list);
  struct noeud* extractMessage(struct list* _list,int* searchNode);

@@ -36,7 +36,7 @@
 		//mise à jour du nombre de noeud total
 		_list->count++;
 	}           
-        printf("\r\nadd  list(%p)[count:%d][noeud:%p][index:%d][commande/ack:%s]\r\n",_list,_list->count,_noeud,_noeud->index,_noeud->data->commande);
+        printf("\r\nadd  list(%p)[count:%d][noeud:%p][index:%d][commande/ack:%s/%s]\r\n",_list,_list->count,_noeud,_noeud->index,_noeud->data->commande,_noeud->data->ack);
 	return true;
  }
 
@@ -69,15 +69,16 @@
  } 
 
 
- bool   init_noeud(struct noeud* _noeud,char *message,int index)
+ bool   init_noeud(struct noeud* _noeud,int index)
  {
 	if (_noeud==NULL)
 		return false;
 	
 	_noeud->data=creer_data();
 	_noeud->data->count=1;	
-	strcpy(_noeud->data->commande,message);
-	_noeud->index=0;	
+	_noeud->data->commande[0]='\0';
+	_noeud->data->ack[0]='\0';
+	_noeud->index=index;	
 	return true;
  }
 
@@ -134,7 +135,7 @@
 		{
 		    _noeud=curseur;
 		   
-		    //printf("\r\nSearch OK  %d==%d\r\n",*searchNode,curseur->index);
+		    printf("\r\nSearch [%d] = cmd : %s - ack : %s\r\n",*searchNode,_noeud->data->commande,_noeud->data->ack);
 		    *searchNode=*searchNode+1;	
                     break; 
 		    
