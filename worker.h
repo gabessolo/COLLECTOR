@@ -18,6 +18,6 @@
  void* listener(void*);
  void* sender(void*);
 
- void  creat_threads();
+ void  creat_threads(char* ip_pass,int port_weblogi);
 
 #endif /* __WORKER__H__ */

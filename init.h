@@ -1,3 +1,3 @@
  #include <stdio.h>
 
- int  init(char** ip_passerelle,int* port_passerelle);
+ int  init(char** ip,int* port);

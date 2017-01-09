@@ -8,19 +8,22 @@
  #include "worker.h"
  #include "defs.h"
 
- #define LISTENER 0
- #define SENDER	  1
 
  pthread_t tid[2];
 
- static int   port_pass=0; 
- static char* ip_pass  =NULL;
+ char buffer[SIZE_BUFFER_RECV];
+ extern int  port_weblogi; 
+ extern char* ip_pass;
+
  static struct list* list_commands=NULL;
 
  void* listener(void* param)
  {
+   printf("\r\nThread LISTENER	created successfully\r\n");
+   printf("\r\n ip_pass:%s port_weblogi:%d\r\n",ip_pass,port_weblogi);
+   
    int sockfd, newsockfd, portno, clilen;
-   char buffer[256];
+   char buffer[COMMAND_SIZE];
    struct sockaddr_in serv_addr, cli_addr;
    int n, pid;
    
@@ -28,7 +31,7 @@
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
    
    if (sockfd < 0) {
-      printf("ERROR opening socket\r\n");
+      printf("\r\nERROR opening socket\r\n");
       exit(1);
    }
    
@@ -37,11 +40,11 @@
    
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_addr.s_addr = INADDR_ANY;
-   serv_addr.sin_port = htons(portno);
+   serv_addr.sin_port = htons(port_weblogi);
    
    /* Now bind the host address using bind() call.*/
    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-      printf("ERROR on binding\r\n");
+      printf("\r\nERROR on binding\r\n");
       exit(1);
    }
   
@@ -49,129 +52,119 @@
 	list_commands=(struct list*)creer_list();
 	
    if (list_commands==NULL) {
-      printf("ERROR on creating list\r\n");
+      printf("\r\nERROR on creating list\r\n");
       exit(1);
    }
   
    struct list* _list=list_commands;   
-   pthread_mutex_init(&(_list->mutex), NULL);
-   pthread_cond_init(&(_list->condition), NULL);
+   init_list(_list);   
  
    /* Now start listening for the clients, here
     *       * process will go in sleep mode and will wait
     *             * for the incoming connection
     *                */
    
+   printf("\r\nThread Listener en attente de commandes\r\n");
    listen(sockfd,5);
    clilen = sizeof(cli_addr);
-   
-   while (1) {
+
+   int nb_connect=0;
+   while (true) 
+   {
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+      printf("\r\nnb_connect: %d\r\n",nb_connect++);
 		
       if (newsockfd < 0) {
-         printf("ERROR on accept\r\n");
+         printf("\r\nERROR on accept\r\n");
          exit(1);
       }
       
-      /* Create child process */
-      pid = fork();
-		
-      if (pid < 0) {
-         printf("ERROR on fork\r\n");
-         exit(1);
+      while(1)
+      {
+      	doprocessing(newsockfd);
       }
-      
-      if (pid == 0) {
-         /* This is the client process */
-         close(sockfd);
-         doprocessing(newsockfd);
-         exit(0);
-      }
-      else {
-         close(newsockfd);
-      }
+
+      printf("\r\nfin proccessing: %d\r\n",nb_connect);
 		
    } /* end of while */
  }
 
-/* The following code seqment shows a simple implementation of doprocessing function.*/
 
  void doprocessing (int sock) {
    int n=0;
-   char buffer[256];
-   bzero(buffer,256);
-   n = read(sock,buffer,255);
+   bzero(buffer,SIZE_BUFFER_RECV);
+   n = read(sock,buffer,SIZE_BUFFER_RECV);
    
    if (n < 0) {
-      printf("ERROR reading from socket\r\n");
+      printf("\r\nERROR reading from socket\r\n");
       exit(1);
    }
    
-   printf("Here is the message: %s\r\n",buffer);
-   
-   struct noeud* node=(struct noeud*)creer_noeud();
-   init_data(node,buffer);   
    struct list* _list=list_commands;
+   struct noeud* node=(struct noeud*)creer_noeud();
+   init_data(node,buffer,_list->count);   
    if (_list!=NULL)
    {
    	pthread_mutex_lock(&(_list->mutex));
-
+	//fill the list of command 
    	ajouter_noeud(_list,node);	  
-	pthread_cond_signal(&(_list->condition));  
-
+	//pthread_cond_signal(&(_list->condition));  
 	pthread_mutex_unlock(&(_list->mutex));
+	sleep(2);
    }
 
-   n = write(sock,"I got your message",18);
+   if (strcmp("#E00007A13A000000001ZZ;",buffer)!=0)
+   {
+   	n = write(sock,"#R0A0010000;",12);
    
-   if (n < 0) {
-      printf("ERROR writing to socket\r\n");
-      exit(1);
+   	if (n < 0) {
+      		printf("\r\nERROR writing to socket\r\n");
+      	exit(1);
+   	}
    }
  }
 	
  void* sender(void* param)
  {
+   printf("\r\nThread SENDER	 created successfully\r\n");
    struct list* _list=list_commands;
+   int index=0;
    if (_list!=NULL)
    {
-   	pthread_mutex_lock(&(_list->mutex));
-	pthread_cond_wait(&(_list->condition),&(_list->mutex));
-	pthread_mutex_unlock(&(_list->mutex));
+   	while(true)
+	{
+		pthread_mutex_lock(&(_list->mutex));
+		//pthread_cond_wait(&(_list->condition),&(_list->mutex));
+		struct noeud* _noeud=extractMessage(_list,index);
+		pthread_mutex_unlock(&(_list->mutex));
+		//printf("\r\nThread SENDER	runs \r\n");
+		if (_noeud!=NULL) printf("\r\n extracted:list[%d]=%s\r\n",index++,_noeud->data->commande);
+		sleep(1);
+	}
    }
 
  }
 
- void  creat_threads(char* ip_passerelle,int port_passerelle)
+ void  creat_threads(char* ip,int port)
  {
+
+  //strcpy(ip_pass,ip);
+  port_weblogi=port; 
   
-  if (init(ip_passerelle,port_passerelle)!=0)
-  {
-	strcpy(ip_passerelle,IP_PASS);
-        port_passerelle= PORT_PASS;
-  }  
- 
   int err = pthread_create(&(tid[LISTENER]), NULL, &listener, NULL);
   if (err != 0)
-     printf("can't create thread LISTENER :[%s]\r\n", strerror(err));
-  else
-     printf("Thread LISTENER created successfully\r\n");
+     printf("\r\ncan't create thread LISTENER :[%s]\r\n", strerror(err));
   
-  //sleep(2);
-
   err = pthread_create(&(tid[SENDER]), NULL, &sender, NULL);
   if (err != 0)
-     printf("can't create thread SENDER :[%s]\r\n", strerror(err));
-  else
-     printf("Thread SENDER  created successfully\r\n");
+     printf("\r\ncan't create thread SENDER :[%s]\r\n", strerror(err));
 
-	
   if(pthread_join(tid[LISTENER], NULL)) {
-     printf("Error joining thread LISTENER\r\n");
+     printf("\r\nError joining thread LISTENER\r\n");
 	return ;
   }
   if(pthread_join(tid[SENDER], NULL)) {
-     printf("Error joining thread SENDER\r\n");
+     printf("\r\nError joining thread SENDER\r\n");
 	return ;
   }
  }

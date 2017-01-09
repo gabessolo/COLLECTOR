@@ -4,9 +4,8 @@
  #include <stdio.h>
  #include "defs.h"
  #include <time.h>
+ #include "list.h"
  
- #define COMMAND_SIZE 23
- #define ACK_SIZE     12
 
  typedef struct data{
   int   count;
@@ -22,6 +21,6 @@
  } data;
 
  struct data*  creer_data();
- void init_data(struct data* _data,char* message);
+ void init_data(struct noeud* _noeud,char* message,int index);
 
  #endif  /* __DATA__H__ */

@@ -1,7 +1,10 @@
-all : collecteur 
+all : collecteur weblogi
 
 collecteur : list.o data.o main.o init.o worker.o
 	gcc -o collecteur list.o data.o init.o worker.o main.o -g  -Wall -lpthread
+
+weblogi : weblogi.o 
+	gcc -o weblogi weblogi.o  -g  -Wall -lpthread
 
 data.o : data.c data.h
 	gcc -o data.o -c data.c
@@ -18,6 +21,8 @@ list.o : list.c list.h
 main.o : main.c defs.h
 	gcc -o main.o -c main.c
 
+weblogi.o : weblogi.c 
+	gcc -o weblogi.o -c weblogi.c
 clean :
 	rm -rf data.o list.o main.o init.o worker.o collecteur 
 

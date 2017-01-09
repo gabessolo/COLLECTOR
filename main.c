@@ -7,12 +7,15 @@
  
  #include <stdlib.h>
 
- char ip_pass[20];
- int  port_pass;
+ char* ip_pass=NULL;
+ int   port_weblogi=0;
 
  int  main(int argc, char** argv)
  {
-	creat_threads(ip_pass,port_pass);
+	
+	init(&ip_pass,&port_weblogi);
+ 	//printf("\r\n<main>ip_pass:%s -- port_weblogi:%d\r\n",ip_pass,port_weblogi);
+        creat_threads(ip_pass,port_weblogi);
 	return 0;
  }
 
