@@ -28,7 +28,6 @@
 	"#E000021231;",
 	"#E000031231;",
 	"#E000041231;",
-	
 	"#E00007A13A000000001ZZ;",
 	"#E000011231;",
 	"#E000021231;",
@@ -285,7 +284,7 @@
     memset(&serv_addr, '0', sizeof(serv_addr)); 
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(80); 
+    serv_addr.sin_port = htons(5000); 
 
     if(inet_pton(AF_INET, argv[1], &serv_addr.sin_addr)<=0)
     {
@@ -344,7 +343,7 @@
 
 
         index++;
-        if (index>nb_case)
+        if (index>=nb_case)
        	 index=0;
 
 	sleep(1);

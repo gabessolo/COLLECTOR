@@ -19,5 +19,7 @@
  void* sender(void*);
 
  void  creat_threads(char* ip_pass,int port_weblogi);
+ int   init_socket_pppx(int* sockfd);
+ int   sendreceave(int sockfd,char* message);
 
 #endif /* __WORKER__H__ */

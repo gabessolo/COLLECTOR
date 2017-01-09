@@ -2,18 +2,19 @@
  #include "init.h"
  #include <sys/time.h>
 
- int init(char** ip,int* port)
+ int init(char** ip_pppx,int* port_weblogi,int* port_pppx)
  {
 	char buffer[50];
         time_t now;
 
-        if (ip==NULL) ip=(char**)malloc(sizeof(char));
+        if (ip_pppx==NULL) ip_pppx=(char**)malloc(sizeof(char));
         
-        *ip=(char*)malloc(20*sizeof(char));   
+        *ip_pppx=(char*)malloc(20*sizeof(char));   
 
-        strcpy(*ip,"192.168.38.102");
+        strcpy(*ip_pppx,"127.0.0.1");
 
-	*port=80;
+	if (port_weblogi!=NULL) *port_weblogi=5000;
+	if (port_pppx!=NULL)    *port_pppx   =9000;
  
         now=time(NULL);
         struct timeval* tv=localtime(&now); 
