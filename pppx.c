@@ -157,7 +157,7 @@
 			       //
    			       struct noeud* _noeud_ack=(struct noeud*)creer_noeud();
                     	       init_noeud(_noeud_ack,_list_a->count);   
-                    	       init_ack(_noeud_ack,"#0123456789;",_list_a->count);   
+                    	       //init_ack(_noeud_ack,"#0123456789;",_list_a->count);   
 
 			      _noeud_ack->data->ack[0] ='#';
                               _noeud_ack->data->ack[1] ='R';

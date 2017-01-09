@@ -124,7 +124,7 @@
          return;
     }
     command[n] = '\0';
-    printf("\r\nCommand  Receaved from weblogi =======> %s[%d] <======\r\n",command);
+    printf("\r\nCommand  Receaved from client =======> %s[%d] <======\r\n",command);
     sleep(T_READ);
    }
    while(n!=(COMMAND_SIZE-1) && n!=(ACK_SIZE-1));
@@ -147,16 +147,16 @@
 	//fill the list of command 
    	ajouter_noeud(_list_c,node);	  
    	printf("\r\nThread listener<collector>	add command :%s\r\n",command);
-	//pthread_cond_signal(&(_list->condition));  
+	//pthread_cond_signal(&(_list_c->condition));  
 	pthread_mutex_unlock(&(_list_c->mutex));
-	sleep(T_AJ_CMD);
+	sleep(2*T_AJ_CMD);
    }
 
    if (strcmp(RE_INIT,command)!=0)
    {
    	//devrait être le retour de la passerelle stocké dans une  liste adaptée
 	pthread_mutex_lock(&(_list_a->mutex));
-	//pthread_cond_wait(&(_list->condition),&(_list->mutex));
+	//pthread_cond_wait(&(_list_a->condition),&(_list_a->mutex));
    	printf("\r\nThread listener<collector>	TRY to extract  ACK no:%d\r\n",*searchNode);
 	struct noeud* _noeud=extractMessage(_list_a,searchNode/* prochain ACK*/);
 	pthread_mutex_unlock(&(_list_a->mutex));
@@ -181,7 +181,7 @@
       	exit(1);
    	}
    }
-	sleep(T_SEND);
+	//sleep(T_SEND);
  }
 
  // envoi les commandes à pppx
@@ -207,7 +207,7 @@
    		while(true)
 		{
 			pthread_mutex_lock(&(_list_c->mutex));
-			//pthread_cond_wait(&(_list->condition),&(_list->mutex));
+			//pthread_cond_wait(&(_list_c->condition),&(_list_c->mutex));
 			struct noeud* _noeud=extractMessage(_list_c,&index /* prochaine commande */);
 			pthread_mutex_unlock(&(_list_c->mutex));
 			//printf("\r\nThread SENDER	runs \r\n");
@@ -227,8 +227,8 @@
 					}
 				}
 			}
-			sleep(T_SEND);
-			sleep(T_READ);
+			//sleep(T_SEND);
+			//sleep(T_READ);
 		}
    	}
      }
@@ -271,7 +271,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
     	else {
          printf("\r\ncommand being sent <collector to pppx> : %s\n",command);
     	}
-        sleep(T_SEND);	
+        //sleep(T_SEND);	
 	if (strcmp(command,RE_INIT)!=0)
 	{	
     		memset(recvBuff, '0',ACK_SIZE);

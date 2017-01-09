@@ -61,7 +61,6 @@
 	_list->curseur=NULL;
 	_list->count=0;
    
-   	//printf("\r\ninit_list  list:%p,count:%d\r\n",_list,_list->count);
 	pthread_mutex_init(&(_list->mutex), NULL);
 	pthread_cond_init(&(_list->condition), NULL);
 
