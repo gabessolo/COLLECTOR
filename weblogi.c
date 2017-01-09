@@ -326,6 +326,7 @@
     	 else {
          printf("\r\nMessage being  sent: %s\n",message);
     	}
+	sleep(T_SEND);
 
 	if (strcmp(message,RE_INIT)!=0)
 	{	
@@ -338,15 +339,15 @@
     		{
         		printf("\n Read error \n");
     		}
- 	}//else
-	//	sleep(2);
+ 	}else
+		sleep(T_NEXT);
 
 
         index++;
         if (index>=nb_case)
        	 index=0;
 
-	//sleep(1);
+	sleep(T_READ);
     }
     close(sockfd);
 

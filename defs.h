@@ -19,5 +19,9 @@
  #define SIZE_BUFFER_SENT	SIZE_BUFFER_RECV 
 
  #define RE_INIT               "#E00007A13A000000001ZZ;"
+ #define T_SEND                0
+ #define T_READ                0 
+ #define T_NEXT                0 
+ #define T_AJ_CMD              0
 
 #endif /* __DEFS__H__ */

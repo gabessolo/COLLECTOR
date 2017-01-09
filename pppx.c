@@ -129,7 +129,7 @@
         printf("\r\nThread listener<pppx> add command :%s \r\n",command);
 	//pthread_cond_signal(&(_list->condition));  
 	//pthread_mutex_unlock(&(_list_c->mutex));
-	//sleep(2);
+	sleep(T_AJ_CMD);
    }
 
    if (strcmp(RE_INIT,command)!=0)
@@ -140,34 +140,39 @@
 		if (_noeud_command->data!=NULL)
 		{
         	//	printf("\r\nThread listener<pppx> [2] \r\n");
-			if (_noeud_command->data->commande)
+			if (_noeud_command->data->commande!=NULL)
 			{
 			       //on construit une réponse dynamiquement en fonction de la commande
 			       //et on la conserve dans la liste des ack ... en  réalité cela fait doublon
 			       //
    			       struct noeud* _noeud_ack=(struct noeud*)creer_noeud();
+                    	       init_ack(_noeud_ack,"#0123456789;",_list_a->count);   
 
-			       ack[0] ='#';
-                               ack[1] ='R';
-                               ack[2] ='0';
-                               ack[3] ='A';
-                               ack[4] =command[4];
-                               ack[5] =command[5];
-                               ack[6] =command[6];
-                               ack[7] =command[7];
-                               ack[8] =command[8];
-                               ack[9] =command[9];
-                               ack[10]=command[10];
-                               ack[11]=';';
-                               ack[12]='\0';
-			
-                    	       init_ack(_noeud_ack,ack,_list_a->count);   
-   			       //pthread_mutex_lock(&(_list_a->mutex));
-   			       ajouter_noeud(_list_a,_noeud_ack);	  
+			      _noeud_ack->data->ack[0] ='#';
+                              _noeud_ack->data->ack[1] ='R';
+                              _noeud_ack->data->ack[2] ='0';
+                              _noeud_ack->data->ack[3] ='A';
+                              _noeud_ack->data->ack[4] =_noeud_command->data->commande[4];
+                              _noeud_ack->data->ack[5] =_noeud_command->data->commande[5];
+                              _noeud_ack->data->ack[6] =_noeud_command->data->commande[6];
+                              _noeud_ack->data->ack[7] =_noeud_command->data->commande[7];
+                              _noeud_ack->data->ack[8] =_noeud_command->data->commande[8];
+                              _noeud_ack->data->ack[9] =_noeud_command->data->commande[9];
+                              _noeud_ack->data->ack[10]=_noeud_command->data->commande[10];
+                              _noeud_ack->data->ack[11]=';';
+                              
+			      //_noeud_ack->data->ack[12]='\0';
+                    	      //init_ack(_noeud_ack,ack,_list_a->count);   
+   			      //pthread_mutex_lock(&(_list_a->mutex));
+   			       
+                              // _noeud_ack->index=_list_a->count;
+			       ajouter_noeud(_list_a,_noeud_ack);	  
+				//sleep(T_AJ_CMD);
 				
-			       n = write(sock,/*_noeud_ack->data->ack*/"#R0A0011231;",ACK_SIZE);
+			       n = send(sock,_noeud_ack->data->ack/*"#R0A0011231;"*/,ACK_SIZE,0);
         		       if (n==(ACK_SIZE)) printf("\r\nThread listener<pppx> sent ACK <<<<<<<< %s >>>>>>>>>>> \r\n",_noeud_ack->data->ack);
-				
+			        	
+			      // sleep(T_SEND);
 			       //fill the list of command 
 			       //pthread_cond_signal(&(_list->condition));  
 			       //pthread_mutex_unlock(&(_list_a->mutex));

@@ -135,7 +135,7 @@
    	printf("\r\nThread listener<collector>	add command :%s\r\n",command);
 	//pthread_cond_signal(&(_list->condition));  
 	pthread_mutex_unlock(&(_list_c->mutex));
-	sleep(1);
+	sleep(2);
    }
 
    if (strcmp(RE_INIT,command)!=0)
@@ -154,7 +154,7 @@
 			{
 				if (sock_ack_weblogi!=0)
 				{
-					n = write(sock_ack_weblogi,_noeud->data->ack,ACK_SIZE);
+					n = send(sock_ack_weblogi,_noeud->data->ack,ACK_SIZE,0);
    					printf("\r\nThread listener<collector>	sent ACK[%d]====> %s <==== to WEBLOGI\r\n",*searchNode,_noeud->data->ack);
 				}
 			}
@@ -167,7 +167,7 @@
       	exit(1);
    	}
    }
-	sleep(1);
+	sleep(T_SEND);
  }
 
  // envoi les commandes à pppx
@@ -248,7 +248,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */)
     	else {
          printf("\r\ncommand being sent <collector to pppx> : %s\n",command);
     	}
-	
+        sleep(T_SEND);	
 	if (strcmp(command,RE_INIT)!=0)
 	{	
     		memset(recvBuff, '0',ACK_SIZE);
@@ -270,7 +270,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */)
    			ajouter_noeud((_list),node);	  
 			//pthread_cond_signal(&(_list->condition));  
 			pthread_mutex_unlock(&(_list->mutex));
-			sleep(1);
+			sleep(T_AJ_CMD);
    		}
  	}	
 	return 0;
