@@ -67,7 +67,7 @@
    listen(sockfd,5);
    clilen = sizeof(cli_addr);
 
-   int nb_connect=0;
+   int nb_connect=1;
    while (true) 
    {
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
@@ -99,18 +99,18 @@
       exit(1);
    }
    
-   struct list* _list=list_commands;
-   struct noeud* node=(struct noeud*)creer_noeud();
-   init_data(node,buffer,_list->count);   
-   if (_list!=NULL)
-   {
-   	pthread_mutex_lock(&(_list->mutex));
-	//fill the list of command 
-   	ajouter_noeud(_list,node);	  
-	//pthread_cond_signal(&(_list->condition));  
-	pthread_mutex_unlock(&(_list->mutex));
-	sleep(2);
-   }
+   //struct list* _list=list_commands;
+   //struct noeud* node=(struct noeud*)creer_noeud();
+   //init_data(node,buffer,_list->count);   
+   //if (_list!=NULL)
+   //{
+   //	pthread_mutex_lock(&(_list->mutex));
+//	//fill the list of command 
+   //	ajouter_noeud(_list,node);	  
+//	//pthread_cond_signal(&(_list->condition));  
+//	pthread_mutex_unlock(&(_list->mutex));
+//	sleep(2);
+  // }
 
    if (strcmp("#E00007A13A000000001ZZ;",buffer)!=0)
    {
@@ -154,16 +154,16 @@
   if (err != 0)
      printf("\r\ncan't create thread LISTENER :[%s]\r\n", strerror(err));
   
-  err = pthread_create(&(tid[SENDER]), NULL, &sender, NULL);
-  if (err != 0)
-     printf("\r\ncan't create thread SENDER :[%s]\r\n", strerror(err));
+  //err = pthread_create(&(tid[SENDER]), NULL, &sender, NULL);
+  //if (err != 0)
+  //   printf("\r\ncan't create thread SENDER :[%s]\r\n", strerror(err));
 
   if(pthread_join(tid[LISTENER], NULL)) {
      printf("\r\nError joining thread LISTENER\r\n");
 	return ;
   }
-  if(pthread_join(tid[SENDER], NULL)) {
-     printf("\r\nError joining thread SENDER\r\n");
-	return ;
-  }
+  //if(pthread_join(tid[SENDER], NULL)) {
+  //   printf("\r\nError joining thread SENDER\r\n");
+//	return ;
+ // }
  }

@@ -148,10 +148,14 @@
 		pthread_mutex_unlock(&(_list->mutex));
 		//printf("\r\nThread SENDER	runs \r\n");
 		if (_noeud!=NULL) {
-			printf("\r\n extracted<collector>:list[%d]=%s\r\n",index,_noeud->data->commande);
 			//crée un message groupé
 			//dialogue avec pppx
-			//if (_noeud->data!=NULL) sendreceave(sockfd,_noeud->data->commande);
+			if (_noeud->data!=NULL) 
+				if (_noeud->data->commande!=NULL)
+				{ 
+					sendreceave(sockfd,_noeud->data->commande);
+					printf("\r\n collector sent to pppx:list[%d]=%s\r\n",index,_noeud->data->commande);
+				}
 			index++;
 		}
 		sleep(1);
@@ -192,17 +196,17 @@ int sendreceave(int sockfd,char* message)
 
         if ((send(sockfd,message,strlen(message) ,0))== -1) {
             printf("\r\nFailure Sending Message\n");
-	    exit(1);
-    	}
+    	    return 1;
+	}
     	else {
-         printf("\r\nMessage being  sent: %s\n",message);
+         printf("\r\nMessage being<collector to pppx>  sent: %s\n",message);
     	}
 	if (strcmp(message,"#E00007A13A000000001ZZ;")!=0)
 	{	
     		memset(recvBuff, '0',sizeof(recvBuff));
 	    	n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
        		recvBuff[n] = 0;
-	        printf("\r\nMessage Receaved:%s\r\n",recvBuff);
+	        printf("\r\nMessage Receaved from pppx:%s\r\n",recvBuff);
                 //le message reçu doit être empilé sur une liste spécifique et retourné par doprocessing à weblogi  
     		if(n < 0)
     		{
@@ -218,7 +222,7 @@ int sendreceave(int sockfd,char* message)
     	char recvBuff[1024];
     	struct sockaddr_in serv_addr; 
 
-    	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    	if((*sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     	{
         	printf("\n Error : Could not create socket \n");
         	return 1;
@@ -235,8 +239,8 @@ int sendreceave(int sockfd,char* message)
         	return 2;
     	} 
    
-    	printf("\r\nTry to connect on Server <%s><%d>\r\n",ip_pppx,port_pppx);
-    	if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    	printf("\r\nTry to connect on Server <%s><%d><sockfd:%d>\r\n",ip_pppx,port_pppx,*sockfd);
+    	if( connect(*sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     	{
     		printf("\n Error : Connect Failed \n");
     		return 3;
