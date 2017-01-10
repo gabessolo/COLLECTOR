@@ -20,8 +20,11 @@
  extern int  port_pppx; 
  extern char* ip_pppx;
 
- static struct list* list_commands=NULL;
- static struct list* list_ack     =NULL;
+ static struct list*  list_commands=NULL;
+ static struct list*  list_ack     =NULL;
+
+ static struct noeud* group[GROUP_SIZE];
+
 
  int sock_command_pppx=0;
 
@@ -166,17 +169,18 @@
 		{
 			if (_noeud->data->ack!=NULL)
 			{
-				if (sock_ack_weblogi!=0)
-				{
-					n = send(sock_ack_weblogi,_noeud->data->ack,ACK_SIZE,0);
-   					printf("\r\nThread listener<collector>	sent ACK[%d]====> %s <==== to WEBLOGI\r\n",*searchNode,_noeud->data->ack);
-				}
+			if (sock_ack_weblogi!=0)
+			{
+			n = send(sock_ack_weblogi,_noeud->data->ack,ACK_SIZE,0);
+   			printf("\r\nThread listener<collector>	sent ACK[%d]====> %s <==== to WEBLOGI\r\n",
+					*searchNode,_noeud->data->ack);
+			}
 			}
 		}
 	}
 	//retourne COMOK même si la passerelle n'a pas encore retourné COMOK
-	if (command,"SIGNEDEVIE") 
-		n = send(sock_ack_weblogi,"0005COMOK",9,0);
+	//if (command,"SIGNEDEVIE") 
+	//	n = send(sock_ack_weblogi,"0005COMOK",9,0);
 	//printf("\r\nThread listener<collector>  ACK[%d] DO NOT exist Try again in 1 sec \r\n",*searchNode); /*sleep(1);*/
 	
    
@@ -185,7 +189,7 @@
       	exit(1);
    	}
    }
-	//sleep(T_SEND);
+   sleep(T_SEND);
  }
 
  // envoi les commandes à pppx
@@ -221,15 +225,16 @@
 				//dialogue avec pppx
 				//
 				
-				if (_noeud->data!=NULL) 
-				{
-					printf("\r\n collector TRY to send to pppx:list[%d],command:%s\r\n",index,_noeud->data->commande);
-					if (_noeud->data->commande!=NULL)
-					{ 
-						sendreceave(sock_command_pppx,_noeud->data->commande,_list_a,&clientDiscon);
-						printf("\r\n collector sent command to pppx:list[%d]=%s\r\n",index,_noeud->data->commande);
-					}
-				}
+			if (_noeud->data!=NULL) 
+			{
+			printf("\r\n collector TRY to send to pppx:list[%d],SIMPLE command:%s\r\n",index,_noeud->data->commande);
+			if (_noeud->data->commande!=NULL)
+			{ 
+				_noeud->sent=true;
+				sendreceave(sock_command_pppx,_noeud->data->commande,_list_a,&clientDiscon);
+				printf("\r\n collector sent command to pppx:list[%d]=%s\r\n",index,_noeud->data->commande);
+			}
+			}
 			}
 			//sleep(T_SEND);
 			//sleep(T_READ);
@@ -303,7 +308,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
    		struct noeud* node=(struct noeud*)creer_noeud();
    		init_noeud(node,_list->count);   
    		init_ack(node,recvBuff,_list->count);   
-   		if (_list!=NULL && strcmp(recvBuff,"0005COMOK")!=0 && strcmp(recvBuff,"0005COMHS")!=0)
+   		if (_list!=NULL /*&& strcmp(recvBuff,"0005COMOK")!=0 && strcmp(recvBuff,"0005COMHS")!=0*/)
    		{
    			pthread_mutex_lock(&(_list->mutex));
 			//fill the list of command 

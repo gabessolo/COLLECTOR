@@ -13,6 +13,7 @@
  	struct  noeud* prec;
  	struct  noeud* suiv;
         int     index;
+	bool    sent;
  };
 
  struct list {

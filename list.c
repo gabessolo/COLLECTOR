@@ -78,6 +78,7 @@
 	_noeud->data->commande[0]='\0';
 	_noeud->data->ack[0]='\0';
 	_noeud->index=index;	
+	_noeud->sent=false;	
 	return true;
  }
 
