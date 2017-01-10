@@ -1,6 +1,7 @@
  #include <stdio.h>
  #include "init.h"
  #include <sys/time.h>
+ #include "defs.h"
 
  int init(char** ip_pppx,int* port_weblogi,int* port_pppx)
  {
@@ -11,10 +12,10 @@
         
         *ip_pppx=(char*)malloc(20*sizeof(char));   
 
-        strcpy(*ip_pppx,"127.0.0.1");
+        strcpy(*ip_pppx,IP_PPPX);
 
-	if (port_weblogi!=NULL) *port_weblogi=5000;
-	if (port_pppx!=NULL)    *port_pppx   =9000;
+	if (port_weblogi!=NULL) *port_weblogi=PORT_COLLECTOR;
+	if (port_pppx!=NULL)    *port_pppx   =PORT_PPPX;
  
         now=time(NULL);
         struct timeval* tv=localtime(&now); 

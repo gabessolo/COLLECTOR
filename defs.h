@@ -10,19 +10,26 @@
  #define false 			0
  #define true 			1
 
- #define IP_PASS		(char*)"192.168.38.102"
- #define PORT_PASS		(int)39000
+ #define IP_PPPX		"127.0.0.1"
+ #define PORT_PPPX		39000
+ #define PORT_COLLECTOR		5000
 
- #define COMMAND_SIZE 		(23+1)
- #define ACK_SIZE     		(12+1)
+ #define COMMAND_SIZE 		23
+ #define ACK_SIZE     		12
+ #define SIGNEDEVIE_SIZE     	10
+ #define COMOK_SIZE     	9
  #define SIZE_BUFFER_RECV	COMMAND_SIZE 
  #define SIZE_BUFFER_SENT	SIZE_BUFFER_RECV 
 
- #define RE_INIT               "#E00007A13A000000001ZZ;"
- #define T_SEND                1  
+ #define RE_INIT	       "#E00000E73A000000001ZZ;"
+ 
+ #define T_SEND                2  
  #define T_READ                1 
  #define T_NEXT                1 
  #define T_AJ_CMD              2 
  #define T_CON                 1 
+
+ #define EX_MSG_GROUP 	"0000#E04001A03A000000001002A13A000000001003A03A000000001004A13A000000001005A03A000000001ZZ;"
+ //	"0000#E04 001A03A000000001 002A13A000000001 003A03A000000001 004A13A000000001 005A03A000000001 ZZ;"
 
 #endif /* __DEFS__H__ */

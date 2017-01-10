@@ -28,7 +28,7 @@
  void* listener(void* param)
  {
    printf("\r\nThread LISTENER<collector>	created successfully\r\n");
-   printf("\r\n ip_pppx:%s port_pppx:%d port_weblogi:%d  \r\n",ip_pppx,port_pppx,port_weblogi);
+   printf("\r\n ip_passerelle:%s port_passerelle(se connecte dessus):%d port_collector(port ecoute):%d  \r\n",ip_pppx,port_pppx,port_weblogi);
    
    int sockfd, newsockfd, portno, clilen;
    struct sockaddr_in serv_addr, cli_addr;
@@ -127,7 +127,7 @@
     printf("\r\nCommand  Receaved from client =======> %s[%d] <======\r\n",command);
     sleep(T_READ);
    }
-   while(n!=(COMMAND_SIZE-1) && n!=(ACK_SIZE-1));
+   while (n!=COMMAND_SIZE && n!=ACK_SIZE && n!=SIGNEDEVIE_SIZE && n!=COMOK_SIZE);
    
 
    if (n < 0 ) {
@@ -152,7 +152,7 @@
 	sleep(2*T_AJ_CMD);
    }
 
-   if (strcmp(RE_INIT,command)!=0)
+   //if (strcmp(RE_INIT,command)!=0)
    {
    	//devrait être le retour de la passerelle stocké dans une  liste adaptée
 	pthread_mutex_lock(&(_list_a->mutex));
@@ -174,7 +174,11 @@
 			}
 		}
 	}
-   	else { printf("\r\nThread listener<collector>  ACK[%d] DO NOT exist Try again in 1 sec \r\n",*searchNode); /*sleep(1);*/}
+	//retourne COMOK même si la passerelle n'a pas encore retourné COMOK
+	if (command,"SIGNEDEVIE") 
+		n = send(sock_ack_weblogi,"0005COMOK",9,0);
+	//printf("\r\nThread listener<collector>  ACK[%d] DO NOT exist Try again in 1 sec \r\n",*searchNode); /*sleep(1);*/
+	
    
    	if (n < 0) {
       		printf("\r\nERROR writing to socket\r\n");
@@ -272,7 +276,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
          printf("\r\ncommand being sent <collector to pppx> : %s\n",command);
     	}
         //sleep(T_SEND);	
-	if (strcmp(command,RE_INIT)!=0)
+	//if (strcmp(command,RE_INIT)!=0)
 	{	
     		memset(recvBuff, '0',ACK_SIZE);
 	    	do {
@@ -283,9 +287,11 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
 			 return 2;
 			}
 			recvBuff[n] = '\0';
-	        	printf("\r\n ACK Receaved from pppx ==========> %s[%d] <==========\r\n",recvBuff,n);
-       		}
-	        while(n!=ACK_SIZE);
+	        	if (n==ACK_SIZE) printf("\r\nACK Receaved from pppx ==========> %s[%d] <==========\r\n",recvBuff,n);
+	        	else printf("\r\nReceaved from pppx ==========> %s[%d] <==========\r\n",recvBuff,n);
+       			
+		}
+	        while(n!=ACK_SIZE && n!=COMOK_SIZE);
 
 
                 //le message reçu doit être empilé sur une liste spécifique et retourné par doprocessing à weblogi  
@@ -297,7 +303,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
    		struct noeud* node=(struct noeud*)creer_noeud();
    		init_noeud(node,_list->count);   
    		init_ack(node,recvBuff,_list->count);   
-   		if (_list!=NULL)
+   		if (_list!=NULL && strcmp(recvBuff,"0005COMOK")!=0 && strcmp(recvBuff,"0005COMHS")!=0)
    		{
    			pthread_mutex_lock(&(_list->mutex));
 			//fill the list of command 
