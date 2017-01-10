@@ -14,5 +14,6 @@
 #       Il s'interface avec weblogi et avec la passerelle.						 #
 #	Il enregistre les commandes en provenance de weblogi						 #
 #	et les bascule à la passerelle	en prenant soin de les regrouper	     		         #	
+#	il laisse passer SIGNEDEVIE  et 0005COMOK							 #					
 #													 #
 ##########################################################################################################
