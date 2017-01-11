@@ -23,8 +23,8 @@
  static struct list*  list_commands=NULL;
  static struct list*  list_ack     =NULL;
 
- static struct noeud* group[GROUP_SIZE];
-
+ static struct noeud* group_noeud[GROUP_NOEUD_SIZE];
+ static char   group_message[GROUP_MESSAGE_SIZE];
 
  int sock_command_pppx=0;
 
@@ -214,27 +214,172 @@
    	{
    		while(true)
 		{
+			struct noeud* _NOEUD=NULL/* nécessaie pour une commande simple */;
+		        int INDEX=0;
+			
 			pthread_mutex_lock(&(_list_c->mutex));
 			//pthread_cond_wait(&(_list_c->condition),&(_list_c->mutex));
+			memset(group_noeud,NULL,GROUP_NOEUD_SIZE);
+
 			struct noeud* _noeud=extractMessage(_list_c,&index /* prochaine commande */);
+
+			group_noeud[0]=_noeud;
+			if (_noeud!=NULL)
+			{
+				_NOEUD=_noeud;
+				INDEX=index;
+			}
+
+                 	_noeud=extractMessage(_list_c,&index /* prochaine commande */);
+		        group_noeud[1]=_noeud;
+			if (_noeud!=NULL)
+			{
+				_NOEUD=_noeud;
+				INDEX=index;
+			}
+			_noeud=extractMessage(_list_c,&index /* prochaine commande */);
+			if (_noeud!=NULL)
+			{
+				_NOEUD=_noeud;
+				INDEX=index;
+			}
+		        group_noeud[2]=_noeud;
+			if (_noeud!=NULL)
+			{
+				_NOEUD=_noeud;
+				INDEX=index;
+			}
+			_noeud=extractMessage(_list_c,&index /* prochaine commande */);
+		        group_noeud[3]=_noeud;
+			if (_noeud!=NULL)
+			{
+				_NOEUD=_noeud;
+				INDEX=index;
+			}
+			_noeud=extractMessage(_list_c,&index /* prochaine commande */);
+		        group_noeud[4]=_noeud;
+			if (_noeud!=NULL)
+			{
+				_NOEUD=_noeud;
+				INDEX=index;
+			}
+			
 			pthread_mutex_unlock(&(_list_c->mutex));
+			
+			int nb_commandes=0,i=0;
+			for(i=0;i<GROUP_NOEUD_SIZE;i++)
+			if (group_noeud[i]!=NULL)
+			{
+				struct noeud* _pNoeud=group_noeud[i];
+				if (_pNoeud!=NULL)
+				{
+					char* com= _pNoeud->data->commande;
+					if (com!=NULL && strcmp(com,"SIGNEDEVIE")!=0 && strcmp(com,RE_INIT)!=0 )
+						nb_commandes++;
+					else
+					if (com!=NULL && (strcmp(com,"SIGNEDEVIE")==0 || strcmp(com,RE_INIT)==0) )
+						nb_commandes=1;
+					
+				}
+			}
+                        
 			//printf("\r\nThread SENDER	runs \r\n");
-			if (_noeud!=NULL) 
+			//une commande simple suffit
+			if (nb_commandes==1)
+			{
+			        _noeud=_NOEUD;	
+                                index=INDEX;
+
+				if (_noeud!=NULL) 
+				{	
+					if (_noeud->data!=NULL) 
+					{
+						printf("\r\n collector TRY to send to pppx:list[%d],SIMPLE command:%s\r\n",
+						index,_noeud->data->commande);
+						if (_noeud->data->commande!=NULL)
+						{ 
+							_noeud->sent=true;
+							sendreceave(sock_command_pppx,_noeud->data->commande,
+									_list_a,&clientDiscon);
+							printf("\r\n collector sent command to pppx:list[%d]=%s\r\n",
+							index,_noeud->data->commande);
+						}
+					}	
+				}
+			////nécessite une commande groupée
+			}else if (nb_commandes>1)
 			{
 				//crée un message groupé
 				//dialogue avec pppx
 				//
+ //	"0000#E04 001A03A000000001 002A13A000000001 003A03A000000001 004A13A000000001 005A03A000000001 ZZ;"
+			        
+				memset(group_message,'\0',GROUP_MESSAGE_SIZE);
+
+				group_message[0]='0';	
+			        group_message[1]='0';	
+			        group_message[2]='0';	
+			        group_message[3]='0';	
+			        group_message[4]='#';	
+			        group_message[5]='E';	
+			        group_message[6]='0';
+
+				//char s_nb[2];
+				//sprintf(s_nb,"%d",nb_commandes);	
+			        //s_nb[1]='\0';
+				//group[7]=atoi(s_nb);	
+
+				group_message[7]=(char)nb_commandes;	//voir si c'est mieux
 				
-			if (_noeud->data!=NULL) 
-			{
-			printf("\r\n collector TRY to send to pppx:list[%d],SIMPLE command:%s\r\n",index,_noeud->data->commande);
-			if (_noeud->data->commande!=NULL)
-			{ 
-				_noeud->sent=true;
-				sendreceave(sock_command_pppx,_noeud->data->commande,_list_a,&clientDiscon);
-				printf("\r\n collector sent command to pppx:list[%d]=%s\r\n",index,_noeud->data->commande);
-			}
-			}
+				int i=0,j=0;
+				for(i=0;i<GROUP_NOEUD_SIZE;i++)
+				if (group_noeud[i]!=NULL)
+				{
+					struct noeud* pNoeud=group_noeud[i];
+					if (pNoeud!=NULL)
+					{
+						char* _com=pNoeud->data->commande;
+						if ((_com!=NULL && strcmp(_com,"SIGNEDEVIE")!=0 && strcmp(_com,RE_INIT)!=0) )
+						{
+							group_message[8 +16*j]=_com[4];	
+							group_message[9 +16*j]=_com[5];	
+							group_message[10+16*j]=_com[6];	
+							group_message[11+16*j]=_com[7];	
+							group_message[12+16*j]=_com[8];	
+							group_message[13+16*j]=_com[9];	
+							group_message[14+16*j]=_com[10];	
+							group_message[15+16*j]=_com[11];	
+							group_message[16+16*j]=_com[12];	
+							group_message[17+16*j]=_com[13];	
+							group_message[18+16*j]=_com[14];	
+							group_message[19+16*j]=_com[15];	
+							group_message[20+16*j]=_com[16];	
+							group_message[21+16*j]=_com[17];	
+							group_message[22+16*j]=_com[18];	
+							group_message[23+16*j]=_com[19];	
+							
+							j++;
+						}
+					}	
+				}
+				//on termine avec ZZ;
+				//
+				//
+			        if (nb_commandes!=GROUP_NOEUD_SIZE)
+				{
+					group_message[23+0+16*j]='Z';	
+			        	group_message[23+1+16*j]='Z';	
+			        	group_message[23+2+16*j]=';';	
+				}
+				else if (nb_commandes!=GROUP_NOEUD_SIZE)
+				{
+					group_message[112]='Z';	
+			        	group_message[113]='Z';	
+			        	group_message[114]=';';	
+			        	group_message[115]='\0'; ///????	
+
+				}
+				printf("\r\n collector TRY to send to pppx:list[%d],GROUP command:%s\r\n",group_message);
 			}
 			//sleep(T_SEND);
 			//sleep(T_READ);
@@ -294,7 +439,6 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
 			recvBuff[n] = '\0';
 	        	if (n==ACK_SIZE) printf("\r\nACK Receaved from pppx ==========> %s[%d] <==========\r\n",recvBuff,n);
 	        	else printf("\r\nReceaved from pppx ==========> %s[%d] <==========\r\n",recvBuff,n);
-       			
 		}
 	        while(n!=ACK_SIZE && n!=COMOK_SIZE);
 
