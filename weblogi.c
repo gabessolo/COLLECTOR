@@ -387,7 +387,7 @@
     	 else {
          printf("\r\nMessage being  sent: %s\n",message);
     	}
-	sleep(T_SEND);
+	//sleep(T_SEND);
 
 	//if (strcmp(message,RE_INIT)!=0)
 	{	
@@ -408,7 +408,7 @@
         if (index>=nb_case)
        	 index=0;
 
-	sleep(T_READ);
+	//sleep(T_READ);
     }
     close(sockfd);
 

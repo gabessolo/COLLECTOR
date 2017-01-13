@@ -10,8 +10,8 @@
  #define false 			0
  #define true 			1
 
- //#define IP_PPPX		"127.0.0.1"
- #define IP_PPPX		"172.18.128.8"
+ #define IP_PPPX		"127.0.0.1"
+ //#define IP_PPPX		"172.18.128.8"
  #define PORT_PPPX		39000
  #define PORT_COLLECTOR		5000
 

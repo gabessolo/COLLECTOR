@@ -128,7 +128,7 @@
     }
     command[n] = '\0';
     printf("\r\nCommand  Receaved from client =======> %s[%d] <======\r\n",command);
-    sleep(T_READ);
+    usleep(300);
    }
    while (n!=COMMAND_SIZE && n!=ACK_SIZE && n!=SIGNEDEVIE_SIZE && n!=COMOK_SIZE);
    
@@ -152,7 +152,7 @@
    	printf("\r\nThread listener<collector>	add command :%s\r\n",command);
 	//pthread_cond_signal(&(_list_c->condition));  
 	pthread_mutex_unlock(&(_list_c->mutex));
-	sleep(2*T_AJ_CMD);
+	//sleep(2*T_AJ_CMD);
    }
 
    //if (strcmp(RE_INIT,command)!=0)
@@ -189,7 +189,7 @@
       	exit(1);
    	}
    }
-   sleep(T_SEND);
+   //sleep(T_SEND);
  }
 
  // envoi les commandes à pppx
@@ -309,6 +309,7 @@
 			////nécessite une commande groupée
 			}else if (nb_commandes>1)
 			{
+			printf("\r\n collector %d commands to GROUP\r\n",nb_commandes);
 				//crée un message groupé
 				//dialogue avec pppx
 				//
@@ -341,6 +342,8 @@
 						char* _com=pNoeud->data->commande;
 						if ((_com!=NULL && strcmp(_com,"SIGNEDEVIE")!=0 && strcmp(_com,RE_INIT)!=0) )
 						{
+							pNoeud->sent=true;
+
 							group_message[8 +16*j]=_com[4];	
 							group_message[9 +16*j]=_com[5];	
 							group_message[10+16*j]=_com[6];	
@@ -379,7 +382,11 @@
 			        	group_message[115]='\0'; ///????	
 
 				}
-				printf("\r\n collector TRY to send to pppx:list[%d],GROUP command:%s\r\n",group_message);
+
+			printf("\r\n collector TRY to send to pppx:list[%d],GROUP command:%s\r\n",group_message);
+			sendreceave(sock_command_pppx,group_message,_list_a,&clientDiscon);
+			printf("\r\n collector sent command GROUP to pppx:list[%d]=%s\r\n",group_message,nb_commandes);
+			
 			}
 			//sleep(T_SEND);
 			//sleep(T_READ);
@@ -459,7 +466,7 @@ int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,
    			ajouter_noeud((_list),node);	  
 			//pthread_cond_signal(&(_list->condition));  
 			pthread_mutex_unlock(&(_list->mutex));
-			sleep(T_AJ_CMD);
+			//sleep(T_AJ_CMD);
 	        	printf("\r\n put ACK[%s] into list \r\n",recvBuff);
    		}
  	}	

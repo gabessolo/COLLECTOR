@@ -1,7 +1,7 @@
 all : collecteur weblogi pppx
 
-collecteur : list.o data.o main_collector.o init.o worker.o
-	gcc -o collecteur list.o data.o init.o worker.o main_collector.o -g  -Wall -lpthread
+collecteur : list.o data.o main_collector.o init.o worker.o sleepMs.o
+	gcc -o collecteur list.o data.o init.o worker.o main_collector.o sleepMs.o  -g  -Wall -lpthread
 
 weblogi : weblogi.o 
 	gcc -o weblogi weblogi.o  -g  -Wall -lpthread
