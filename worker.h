@@ -12,16 +12,21 @@
  #include "data.h"
 
 
- pthread_t tid[2];
+ pthread_t tid[4];
 
- void doprocessing_pppx (int sock,int* searchNode,bool* clientDiscon);
- void doprocessing_collector (int sock_command,int sock_ack_weblogi,int* searchNode /* prochain ACK*/,bool* clientDiscon);
- int sendreceave(int sockfd,char* command,struct list* _list /* liste des ack */,bool* clientDiscon);
+ void doprocessing_listener_command ();
+ void doprocessing_listener_ack();
+ void doprocessing_sender_ack();
+ void doprocessing_sender_command();
+
  
- void* listener(void*);
- void* sender(void*);
+ void* listener_command(void*);
+ void* listener_ack(void*);
+ void* sender_ack(void*);
+ void* sender_command(void*);
 
- void  creat_threads(char* ip_pass,int port_weblogi);
- int   init_socket_pppx(int* sockfd);
+ void  creat_threads();
+ int   init_sock_client(int* sockfd,const char* ip, int port,const char* serverName);
+ int   init_sock_server(int* sockfd,int port);
 
 #endif /* __WORKER__H__ */

@@ -2,21 +2,29 @@
  #define __DEFS__H__
 
  #define TAILLE_BUFFER  	64
- #define LISTENER 		0
- #define SENDER	  		1
+
+ #define LISTEN_COM 		0
+ #define LISTEN_ACK 		1
+ #define SEND_COM	  	2
+ #define SEND_ACK	  	3
 
  typedef int bool;
 
  #define false 			0
  #define true 			1
 
- #define IP_PPPX		"127.0.0.1"
- //#define IP_PPPX		"172.18.128.8"
+ //#define IP_PPPX		"127.0.0.1"
+ #define IP_PPPX	        "172.18.128.8"
+ //#define IP_PPPX		"192.168.38.102"
+// #define IP_WL	        "172.18.128.8"
+ //#define IP_WL		        "127.0.0.1"
  #define PORT_PPPX		39000
- #define PORT_COLLECTOR		5000
+ #define PORT_COLLECTEUR	39000
+ #define IP_COLLECTEUR	        "172.18.128.8"
+ //#define IP_COLLECTEUR	        "172.22.248.68"
 
  #define COMMAND_SIZE 		23
- #define ACK_SIZE     		(12+4)
+ #define ACK_SIZE     		12
  #define SIGNEDEVIE_SIZE     	10
  #define COMOK_SIZE     	9
  #define SIZE_BUFFER_RECV	COMMAND_SIZE 
@@ -24,10 +32,10 @@
 
  #define RE_INIT	       "#E00000E73A000000001ZZ;"
  
- #define T_SEND                2  
+ #define T_SEND                1  
  #define T_READ                1 
  #define T_NEXT                1 
- #define T_AJ_CMD              2 
+ #define T_AJ_CMD              1 
  #define T_CON                 1 
 
  #define GROUP_NOEUD_SIZE      5

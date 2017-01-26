@@ -1,3 +1,8 @@
- #include <stdio.h>
+#ifndef __INIT__H__
+#define __INIT__H__
 
- int  init(char** ip,int* port_weblogi,int* port_pppx);
+#include <stdio.h>
+
+int  init(char** ip_pppx,int* port_pppx);
+
+#endif /* __INIT__H__ */

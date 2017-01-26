@@ -8,7 +8,7 @@
  #include <stdlib.h>
 
  char* ip_pass=NULL;
- int   port_weblogi=0;
+ int   port_wl=0;
 
  int  main(int argc, char** argv)
  {

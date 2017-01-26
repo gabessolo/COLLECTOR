@@ -1,7 +1,7 @@
 all : collecteur weblogi pppx
 
-collecteur : list.o data.o main_collector.o init.o worker.o sleepMs.o
-	gcc -o collecteur list.o data.o init.o worker.o main_collector.o sleepMs.o  -g  -Wall -lpthread
+collecteur : list.o data.o main_collecteur.o init.o worker.o sleepMs.o
+	gcc -o collecteur list.o data.o init.o worker.o main_collecteur.o sleepMs.o  -g  -Wall -lpthread
 
 weblogi : weblogi.o 
 	gcc -o weblogi weblogi.o  -g  -Wall -lpthread
@@ -24,8 +24,8 @@ list.o : list.c list.h
 main_pppx.o : main_pppx.c defs.h
 	gcc -o main_pppx.o -c main_pppx.c
 
-main_collector.o : main_collector.c defs.h
-	gcc -o main_collector.o -c main_collector.c
+main_collecteur.o : main_collecteur.c defs.h
+	gcc -o main_collecteur.o -c main_collecteur.c
 
 weblogi.o : weblogi.c 
 	gcc -o weblogi.o -c weblogi.c
@@ -33,5 +33,5 @@ weblogi.o : weblogi.c
 pppx.o : pppx.c 
 	gcc -o pppx.o -c pppx.c
 clean :
-	rm -rf data.o list.o main.o init.o worker.o collecteur weblogi pppx
+	rm -rf data.o list.o  init.o worker.o collecteur weblogi pppx
 
