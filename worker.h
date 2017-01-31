@@ -26,7 +26,5 @@
  void* sender_command(void*);
 
  void  creat_threads();
- int   init_sock_client(int* sockfd,const char* ip, int port,const char* serverName);
- int   init_sock_server(int* sockfd,int port);
 
 #endif /* __WORKER__H__ */

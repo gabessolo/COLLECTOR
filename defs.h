@@ -13,22 +13,25 @@
  #define false 			0
  #define true 			1
 
- //#define IP_PPPX		"127.0.0.1"
- #define IP_PPPX	        "172.18.128.8"
+ #define IP_PPPX		"127.0.0.1"
+ //#define IP_PPPX	        "172.18.128.8"
  //#define IP_PPPX		"192.168.38.102"
 // #define IP_WL	        "172.18.128.8"
- //#define IP_WL		        "127.0.0.1"
- #define PORT_PPPX		39000
- #define PORT_COLLECTEUR	39000
- #define IP_COLLECTEUR	        "172.18.128.8"
- //#define IP_COLLECTEUR	        "172.22.248.68"
+ //#define IP_WL	        "127.0.0.1"
+ 
+#define PORT_PPPX		39000
+ #define PORT_COLLECTEUR	5000
+ #define PORT_MEUBLE		2101
+ //#define IP_COLLECTEUR        "172.18.128.8"
+ #define IP_COLLECTEUR	        "127.0.0.1"
+ #define IP_MEUBLE	        "127.0.0.1"
 
  #define COMMAND_SIZE 		23
  #define ACK_SIZE     		12
  #define SIGNEDEVIE_SIZE     	10
  #define COMOK_SIZE     	9
- #define SIZE_BUFFER_RECV	COMMAND_SIZE 
- #define SIZE_BUFFER_SENT	SIZE_BUFFER_RECV 
+ #define BUFFER_RECV	COMMAND_SIZE 
+ #define BUFFER_SENT	BUFFER_RECV 
 
  #define RE_INIT	       "#E00000E73A000000001ZZ;"
  
@@ -37,6 +40,7 @@
  #define T_NEXT                1 
  #define T_AJ_CMD              1 
  #define T_CON                 1 
+ #define T_CREAT               1 
 
  #define GROUP_NOEUD_SIZE      5
  #define GROUP_MESSAGE_SIZE    (115+1)
