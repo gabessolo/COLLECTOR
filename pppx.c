@@ -87,7 +87,7 @@ int   port_meuble;
    }
 	
    command[n] = '\0';
-   printf("\r\nCOLLECTEUR ===> '%s'\r\n",command);
+   printf("\r\nCOLLECTEUR ===> PPPX : '%s'\r\n",command);
 
    if (strcmp(command,RE_INIT)==0)
         return; 
@@ -101,7 +101,11 @@ int   port_meuble;
    command[0] ='#';
    command[1] ='R';
    command[2] ='0';
-   command[3] ='A';
+   command[3] ='0';
+   command[7]='1';
+   command[8]='2';
+   command[9]='3';
+   command[10]='1';
    command[11]=';';
    command[12]='\0';
 				
@@ -109,7 +113,7 @@ int   port_meuble;
    if (n<0)
 	*clientDiscon=true;
    else
-        printf("\r\nPPPX <=== '%s'\r\n",command);
+        printf("\r\nPPPX ===>COLLECTEUR : '%s'\r\n",command);
    // sleep(T_SEND);
 				
  }	
