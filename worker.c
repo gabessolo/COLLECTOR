@@ -93,7 +93,7 @@ int   port_meuble;
 	sleep(T_CON);  
    }
 
-   printf("\r\nécoute les commandes sur le  port:%d\r\n",port_collecteur);
+   printf("\r\nécoute les commandes sur le  port : %d\r\n",port_collecteur);
    if (list_commands==NULL)
 	list_commands=(struct list*)creer_list();
 	
@@ -106,7 +106,7 @@ int   port_meuble;
    init_list(_list_c);   
  
    struct sockaddr_in  cli_addr;
-   listen(sock_listen_command,5);
+   listen(sock_listen_command,MAX_CLIENTS_COLLECTEUR);
    int clilen = sizeof(struct sockaddr_in);
 
    while (true) 
@@ -129,19 +129,19 @@ int   port_meuble;
  void collect_command (int sock_command) {
    int n=0;
    //bzero(command,SIZE_BUFFER_RECV);
-   printf("\r\nAttente des commandes\r\n");
    bool clientDiscon=false;
    do {
+   	printf("\r\nAttente d'une commande\r\n");
    	memset(command, '0',COMMAND_SIZE);
     	n = read(sock_command,command,COMMAND_SIZE);
 	if (n==0) { 
 	clientDiscon=true;
 	printf("\r\nErreur de lecture sur socket\r\n");
+        continue; 
 	}
 	
 	command[n] = '\0';
-	printf("\r\nCommande reçu >>> %s <==\r\n",command);
-   
+	printf("\r\nWL ===> '%s'\r\n",command);
 
 	if (strcmp(command,RE_INIT)==0)
 		continue;
@@ -158,7 +158,7 @@ int   port_meuble;
 	{
    		pthread_mutex_lock(&(_list_c->mutex));
 	   	ajouter_noeud(_list_c,node);	  
-	   	printf("\r\nADD :%s\r\n",command);
+	   	//printf("\r\nAjout '%s'\r\n",command);
 		pthread_mutex_unlock(&(_list_c->mutex));
         }
    }
@@ -216,17 +216,18 @@ int   port_meuble;
  {
   
   init_collecteur(&ip_pppx,&port_pppx,&port_collecteur);
-  printf("\r\nip_pppx:'%s' port_pppx de connexion:%d\r\n",ip_pppx,port_pppx);
 
   bool clientDiscon=false;
   int nb_commandes=1;
-  
+  char* serverName="PPPX";
+
   while(true)
   {
-  	while (init_sock_client(&sock_send_command,ip_pppx,port_pppx,"PPPX")!=0)
+  	while (init_sock_client(&sock_send_command,ip_pppx,port_pppx,serverName)<0)
 		sleep(T_CON);
 
         sock_listen_ack=sock_send_command;  
+  	printf("\r\nConnexion réussie sur le serveur '%s'-ip:'%s' port:%d\r\n",serverName,ip_pppx,port_pppx);
 
    	struct list* _list_c=list_commands;
    	int index=0; /* index prochaine commande à envoyer à pppx*/
@@ -240,7 +241,6 @@ int   port_meuble;
 			pthread_mutex_lock(&(_list_c->mutex));
 			//pthread_cond_wait(&(_list_c->condition),&(_list_c->mutex));
 			memset(group_noeud,NULL,GROUP_NOEUD_SIZE);
-			printf("\r\nTentative d'émission\r\n");
 
 			struct noeud* _noeud=extractMessage(_list_c,&index /* prochaine commande */);
 
@@ -303,7 +303,11 @@ int   port_meuble;
                         
 			//printf("\r\nThread SENDER	runs \r\n");
 			//une commande simple suffit
-			if (nb_commandes==1)
+			if (nb_commandes==0) {
+			  sleep(T_EXTRACT);
+			  continue;
+			}	
+			else if (nb_commandes==1)
 			{
 			        _noeud=_NOEUD;	
                                 index=INDEX;
@@ -329,7 +333,7 @@ int   port_meuble;
 			////nécessite une commande groupée
 			}else if (nb_commandes>1)
 			{
-			printf("\r\ncollecteur %d commands à grouper\r\n",nb_commandes);
+				printf("\r\ncollecteur %d commands à grouper\r\n",nb_commandes);
 				//crée un message groupé
 				//dialogue avec pppx
 				//
@@ -414,7 +418,7 @@ int   port_meuble;
 
 			
 			}
-			//sleep(T_SEND);
+			sleep(T_SEND);
 			//sleep(T_READ);
 		}
    	}
@@ -435,7 +439,8 @@ int   port_meuble;
   if (err != 0)
      printf("\r\ncan't create thread SEND-COM :[%s]\r\n", strerror(err));
   sleep(T_CREAT);
-  
+
+ /* 
   err = pthread_create(&(tid[LISTEN_ACK]), NULL, &listener_ack, NULL);
   if (err != 0)
      printf("\r\ncan't create thread LISTEN-ACK :[%s]\r\n", strerror(err));
@@ -444,21 +449,21 @@ int   port_meuble;
   err = pthread_create(&(tid[SEND_ACK]), NULL, &sender_ack, NULL);
   if (err != 0)
      printf("\r\ncan't create thread SEND-ACK :[%s]\r\n", strerror(err));
-  sleep(T_CREAT);
+  sleep(T_CREAT);*/
   //////////////// wait until threads ends
 
-  if(pthread_join(tid[LISTEN_ACK], NULL)) {
+/*  if(pthread_join(tid[LISTEN_ACK], NULL)) {
      printf("\r\nError joining thread LISTEN-ACK\r\n");
 	return ;
-  }
+  }*/
   if(pthread_join(tid[LISTEN_COM], NULL)) {
      printf("\r\nError joining thread LISTEN-COM\r\n");
 	return ;
-  }
+  }/*
   if(pthread_join(tid[SEND_ACK], NULL)) {
      printf("\r\nError joining thread SEND-ACK\r\n");
 	return ;
-  }
+  }*/
   if(pthread_join(tid[SEND_COM], NULL)) {
      printf("\r\nError joining thread SEND-COM\r\n");
 	return ;
@@ -489,7 +494,7 @@ void doprocessing_listener_ack ()
    init_list(_list_a);   
  
    struct sockaddr_in  cli_addr;
-   listen(sock_listen_ack,1);
+   listen(sock_listen_ack,MAX_CLIENTS_PPPX);
    int clilen = sizeof(struct sockaddr_in);
 
    while (true) 

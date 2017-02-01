@@ -359,19 +359,18 @@
     struct sockaddr_in serv_addr; 
 
     ip_collecteur=init_collecteur(&ip_pppx,&port_pppx,&port_collecteur);
-    
-    while(init_sock_client(&sock_send_command,ip_collecteur,port_collecteur,"PPPX")<0)
+    char* serverName="COLLECTEUR";
+    while(init_sock_client(&sock_send_command,ip_collecteur,port_collecteur,serverName)<0)
     {
    	printf("\r\nErreur création de socket client sur le port :%d\r\n",port_collecteur);
 	sleep(T_CON);  
     }
     int index=0;
     int nb_case=sizeof(scenario)/sizeof(scenario[0]);
-    printf("\r\nsizeof(scenario):%d\r\n",nb_case);
+    printf("\r\nConnexion au serveur '%s' sur le port %d  réussie\r\n",serverName,port_collecteur);
+    printf("\r\nnombre de commandes à émettre en boucle : %d\r\n",nb_case);
     while(1)
     {
-
-    	printf("\r\nSent nbr <%d>\r\n",index);
     	int size_message=0; 
         size_message=strlen(scenario[index]);
         memset(message,'\0',size_message); 
@@ -379,23 +378,23 @@
 
 
 	if ((send(sock_send_command,message, size_message,0))== -1) {
-            printf("\r\nFailure Sending Message\n");
+            printf("\r\nEchec d'envoi du message '%s'\n",message);
 	    exit(1);
     	}
     	 else {
-         printf("\r\nMessage being  sent: %s\n",message);
+         printf("\r\nWL ===> '%s'\n",message);
     	}
-	//sleep(T_SEND);
 
+	sleep(T_READ);
 	{	
     		memset(recvBuff, '0',sizeof(recvBuff));
 	    	n = read(sockfd, recvBuff, sizeof(recvBuff)-1);
        		recvBuff[n] = 0;
-	        printf("\r\n from <COLLECTEUR> Receaved:%s\r\n",recvBuff);
+	        printf("\r\n'%s'<=== COLLECTEUR\r\n",recvBuff);
 
     		if(n < 0)
     		{
-        		printf("\n Read error \n");
+        		printf("\r\nErreur de lecture\r\n");
     		}
  	}
 
@@ -403,7 +402,7 @@
         if (index>=nb_case)
        	 index=0;
 
-	//sleep(T_READ);
+	sleep(T_SEND);
     }
     close(sockfd);
 
