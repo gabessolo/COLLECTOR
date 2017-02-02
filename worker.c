@@ -14,8 +14,9 @@
 
  pthread_t tid[4];
 
- char ack[BUFFER_RECV];
+ char ack[ACK_SIZE];
  char command[BUFFER_RECV];
+ char message[BUFFER_RECV];
 
  char buffer[COMMAND_SIZE];
  
@@ -51,7 +52,7 @@ int   port_meuble;
  void* sender_ack(void* param)
  {
    printf("\r\nThread sender-ack créé avec succés\r\n");
-   //doprocessing_sender_ack();
+   doprocessing_sender_ack();
  }
  
  void* sender_command(void* param)
@@ -99,7 +100,7 @@ int   port_meuble;
 	
    if (list_commands==NULL) {
       printf("\r\nErreur à la création de la liste des commandes\r\n");
-      exit(0);
+      return;
    }
   
    struct list* _list_c=list_commands;   
@@ -114,7 +115,7 @@ int   port_meuble;
       sock_send_ack = accept(sock_listen_command, (struct sockaddr *) &cli_addr, &clilen);
       printf("\r\nnb_connect: %d\r\n",nb_connect);
 		
-      if (sock_send_ack < 0) {
+      if (sock_listen_command < 0) {
          printf("\r\nErreur connexion\r\n");
       	 continue;
       }
@@ -168,10 +169,13 @@ int   port_meuble;
  //envoi les ack de  pppx à weblogi
  void doprocessing_sender_ack () {
 
- int searchNode=0;
- 
- do
- {
+          if (list_ack==NULL)
+		list_ack=(struct list*)creer_list();
+	
+	  if (list_ack==NULL) {
+	      printf("\r\nErreur à la  création de la liste des ACK\r\n");
+	  }
+	
 	 struct list* _list_a=list_ack;      /* contient tous les ack en provenance du meuble via la passerelle */
 	 //devrait être le retour de la passerelle stocké dans une  liste adaptée
 	 bool serverDiscon=false;
@@ -180,9 +184,10 @@ int   port_meuble;
  
 		 pthread_mutex_lock(&(_list_a->mutex));
 		//pthread_cond_wait(&(_list_a->condition),&(_list_a->mutex));
-		 printf("\r\nThread sender_ack	tente une extraction du  ACK no:%d\r\n",searchNode);
+		 //printf("\r\nextraction du  ACK no:%d\r\n",searchNode);
 		 struct noeud* _noeud=extractMessage(_list_a,&searchNode/* prochain ACK*/);
 		 pthread_mutex_unlock(&(_list_a->mutex));
+		 
 		 if (_noeud!=NULL)
 		 {
 			if (_noeud->data!=NULL)
@@ -191,24 +196,20 @@ int   port_meuble;
 				{
 					if (sock_send_ack!=0)
 					{
-						int n = send(sock_send_ack,_noeud->data->ack,strlen(_noeud->data->ack),0);
+						int n = send(sock_send_ack,_noeud->data->ack,ACK_SIZE,0);
  						if (n <= 0) {
 						    printf("\r\nErreur écriture de socket\r\n");
 						    serverDiscon=true;
 						}
-				   		printf("\r\nThread sender-ack envoi ACK[%d]==> %s <==\r\n",
-						searchNode,_noeud->data->ack);
+				   		printf("\r\nCOLLECTEUR  ===> '%s'\r\n",_noeud->data->ack);
 					}
 
 				}
 			}		
  		}
-		//sleep(T_READ);
+	//	sleep(T_READ);
  
 	 }while(serverDiscon==false);
- 
- }while(true);
-
  }
 
  // envoi les commandes à pppx
@@ -220,6 +221,14 @@ int   port_meuble;
   bool clientDiscon=false;
   int nb_commandes=1;
   char* serverName="PPPX";
+
+  if (list_commands==NULL)
+	list_commands=(struct list*)creer_list();
+	
+  if (list_commands==NULL) {
+      printf("\r\nErreur à la création de la liste des commandes\r\n");
+      return;
+  }
 
   while(true)
   {
@@ -301,8 +310,6 @@ int   port_meuble;
 				}
 			}
                         
-			//printf("\r\nThread SENDER	runs \r\n");
-			//une commande simple suffit
 			if (nb_commandes==0) {
 			  sleep(T_EXTRACT);
 			  continue;
@@ -316,24 +323,26 @@ int   port_meuble;
 				{	
 				if (_noeud->data!=NULL) 
 				{
-				printf("\r\nTentative d'envoi ==> list[%d],SIMPLE:'%s'\r\n",
-				index,_noeud->data->commande);
 				if (_noeud->data->commande!=NULL)
 				{ 
 				_noeud->sent=true;
-        
-				if ((send(sock_send_command,_noeud->data->commande,strlen(_noeud->data->commande) ,0))
+        			memset(command,'\0',COMMAND_SIZE);
+                                strcpy(command,_noeud->data->commande);	
+				if ((send(sock_send_command,command,COMMAND_SIZE,0))
 					== -1) {
-					 printf("\r\nEchech émission commande Simple\n");
+					 printf("\r\nEchec émission commande Simple\n");
 					 clientDiscon=true;
-				}
+				}else
+				printf("\r\nCOLLECTEUR ==> émission SIMPLE:[%d]'%s'\r\n",
+				index,_noeud->data->commande);
+
 				}
 				}	
 				}
 			////nécessite une commande groupée
 			}else if (nb_commandes>1)
 			{
-				printf("\r\ncollecteur %d commands à grouper\r\n",nb_commandes);
+				printf("\r\ncollecteur %d commandes à grouper\r\n",nb_commandes);
 				//crée un message groupé
 				//dialogue avec pppx
 				//
@@ -347,20 +356,16 @@ int   port_meuble;
 			        group_message[3]='0';	
 			        group_message[4]='#';	
 			        group_message[5]='E';	
-			        group_message[6]='0';
+			        group_message[6]='0'; //zone
 
-				char s_nb[2];
-				sprintf(s_nb,"%d",nb_commandes);	
-			        s_nb[1]='\0';
-				group_message[7]=atoi(s_nb);	
+				sprintf(&group_message[7],"%d",(nb_commandes-1));	
 
-				//group_message[7]=(char)nb_commandes;	//voir si c'est mieux
 				
-				int i=0,j=0;
-				for(i=0;i<GROUP_NOEUD_SIZE;i++)
-				if (group_noeud[i]!=NULL)
+				int iNoeud=0,jMessage=0;
+				for(iNoeud=0;iNoeud<GROUP_NOEUD_SIZE;iNoeud++)
+				if (group_noeud[iNoeud]!=NULL)
 				{
-					struct noeud* pNoeud=group_noeud[i];
+					struct noeud* pNoeud=group_noeud[iNoeud];
 					if (pNoeud!=NULL && pNoeud->data!=NULL)
 					{
 						char* _com=pNoeud->data->commande;
@@ -368,57 +373,46 @@ int   port_meuble;
 						{
 							pNoeud->sent=true;
 
-							group_message[8 +16*j]=_com[4];	
-							group_message[9 +16*j]=_com[5];	
-							group_message[10+16*j]=_com[6];	
-							group_message[11+16*j]=_com[7];	
-							group_message[12+16*j]=_com[8];	
-							group_message[13+16*j]=_com[9];	
-							group_message[14+16*j]=_com[10];	
-							group_message[15+16*j]=_com[11];	
-							group_message[16+16*j]=_com[12];	
-							group_message[17+16*j]=_com[13];	
-							group_message[18+16*j]=_com[14];	
-							group_message[19+16*j]=_com[15];	
-							group_message[20+16*j]=_com[16];	
-							group_message[21+16*j]=_com[17];	
-							group_message[22+16*j]=_com[18];	
-							group_message[23+16*j]=_com[19];	
+							group_message[8 +16*jMessage]=_com[4];	
+							group_message[9 +16*jMessage]=_com[5];	
+							group_message[10+16*jMessage]=_com[6];	
+							group_message[11+16*jMessage]=_com[7];	
+							group_message[12+16*jMessage]=_com[8];	
+							group_message[13+16*jMessage]=_com[9];	
+							group_message[14+16*jMessage]=_com[10];	
+							group_message[15+16*jMessage]=_com[11];	
+							group_message[16+16*jMessage]=_com[12];	
+							group_message[17+16*jMessage]=_com[13];	
+							group_message[18+16*jMessage]=_com[14];	
+							group_message[19+16*jMessage]=_com[15];	
+							group_message[20+16*jMessage]=_com[16];	
+							group_message[21+16*jMessage]=_com[17];	
+							group_message[22+16*jMessage]=_com[18];	
+							group_message[23+16*jMessage]=_com[19];	
 							
-							j++;
+							jMessage++;
 						}
 					}	
 				}
 				//on termine avec ZZ;
 				//
 				//
-			        if (nb_commandes!=GROUP_NOEUD_SIZE)
-				{
-					group_message[23+0+16*j]='Z';	
-			        	group_message[23+1+16*j]='Z';	
-			        	group_message[23+2+16*j]=';';	
-				}
-				else if (nb_commandes==GROUP_NOEUD_SIZE)
-				{
-					group_message[112]='Z';	
-			        	group_message[113]='Z';	
-			        	group_message[114]=';';	
-			        	group_message[115]='\0'; ///????	
+				group_message[23+1+16*(jMessage-1)]='Z';	
+			       	group_message[23+2+16*(jMessage-1)]='Z';	
+			       	group_message[23+3+16*(jMessage-1)]=';';	
+			       	group_message[23+4+16*(jMessage-1)]='\0';	
 
-				}
-
-			printf("\r\ncollecteur essaye d'envoyer à pppx >> list[%d],GROUP command:%s\r\n",group_message);
 			if ((send(sock_send_command,group_message,strlen(group_message) ,0))== -1) {
-				 printf("\r\nEchec d'envoi Group command\n");
+				 printf("\r\nEchec d'envoi Group command\r\n");
 				 clientDiscon=true;
 			}
 			else {
-				 printf("\r\nCommande en cours d'envoi >>> %s <<< \n",_noeud->data->commande);
+				 printf("\r\nCOLLECTEUR ===> '%s' ===>PPPX\r\n",group_message);
     			}
 
 			
 			}
-			sleep(T_SEND);
+			//sleep(T_SEND);
 			//sleep(T_READ);
 		}
    	}
@@ -439,8 +433,7 @@ int   port_meuble;
   if (err != 0)
      printf("\r\ncan't create thread SEND-COM :[%s]\r\n", strerror(err));
   sleep(T_CREAT);
-
- /* 
+  
   err = pthread_create(&(tid[LISTEN_ACK]), NULL, &listener_ack, NULL);
   if (err != 0)
      printf("\r\ncan't create thread LISTEN-ACK :[%s]\r\n", strerror(err));
@@ -449,21 +442,24 @@ int   port_meuble;
   err = pthread_create(&(tid[SEND_ACK]), NULL, &sender_ack, NULL);
   if (err != 0)
      printf("\r\ncan't create thread SEND-ACK :[%s]\r\n", strerror(err));
-  sleep(T_CREAT);*/
+  sleep(T_CREAT);
+  
+  
+  
   //////////////// wait until threads ends
-
-/*  if(pthread_join(tid[LISTEN_ACK], NULL)) {
+  
+  if(pthread_join(tid[LISTEN_ACK], NULL)) {
      printf("\r\nError joining thread LISTEN-ACK\r\n");
 	return ;
-  }*/
+  } 
   if(pthread_join(tid[LISTEN_COM], NULL)) {
      printf("\r\nError joining thread LISTEN-COM\r\n");
 	return ;
-  }/*
+  }
   if(pthread_join(tid[SEND_ACK], NULL)) {
      printf("\r\nError joining thread SEND-ACK\r\n");
 	return ;
-  }*/
+  }
   if(pthread_join(tid[SEND_COM], NULL)) {
      printf("\r\nError joining thread SEND-COM\r\n");
 	return ;
@@ -472,15 +468,11 @@ int   port_meuble;
 
 void doprocessing_listener_ack ()
 {
-
-   init_pppx(&ip_meuble,&port_meuble,&port_pppx);
-   printf("\r\nécoute les  ACK sur le port :%d  \r\n",port_pppx);
-   
-   sock_listen_ack=sock_send_command;
+  // sock_listen_ack=sock_send_command;
 
    if (sock_listen_ack<=0){  
       printf("\r\nErreur à la création de sock_listen_ack\r\n");
-      exit(1);
+      return;
    }
  
    if (list_ack==NULL)
@@ -492,26 +484,8 @@ void doprocessing_listener_ack ()
   
    struct list* _list_a=list_ack;   
    init_list(_list_a);   
- 
-   struct sockaddr_in  cli_addr;
-   listen(sock_listen_ack,MAX_CLIENTS_PPPX);
-   int clilen = sizeof(struct sockaddr_in);
 
-   while (true) 
-   {
-      int newsockfd = accept(sock_listen_ack, (struct sockaddr *) &cli_addr, &clilen);
-      printf("\r\nnb_connect: %d\r\n",nb_connect);
-		
-      if (newsockfd < 0) {
-         printf("\r\nErreur à la connexion sur le listener-ack \r\n");
-      	 continue;
-      }
-
-      collect_ack(newsockfd);
-
-      printf("\r\nfin de traîtement du client : %d\r\n",nb_connect++);
-		
-   } /* end of while */
+   collect_ack(sock_listen_ack);
 }
  //reçoit les commandes de weblogi
  void collect_ack (int sock_ack) {
@@ -519,16 +493,17 @@ void doprocessing_listener_ack ()
    //bzero(command,SIZE_BUFFER_RECV);
    bool clientDiscon=false;
    do {
-   	printf("\r\nAttente prochain ACK\r\n");
+   	printf("\r\nAttente du prochain ACK\r\n");
    	memset(ack, '0',ACK_SIZE);
     	n = read(sock_ack,ack,ACK_SIZE);
 	if (n==0) { 
 	clientDiscon=true;
 	printf("\r\nErreur lecture socket ACK \r\n");
-	}
+	continue;
+        }
 	
 	ack[n] = '\0';
-	printf("\r\nCommande  Reçu ==> %s <=\r\n",ack);
+	printf("\r\nPPPX ===> '%s'\r\n",ack);
    
 
 	if (strcmp(ack,"0005COMOK")==0)
@@ -537,7 +512,7 @@ void doprocessing_listener_ack ()
 	if (strcmp(ack,"0005COMHS")==0)
 		continue;
 
-	struct list* _list_a=list_ack; /* contient toutes les commandes en provenance de weblogi */
+	struct list* _list_a=list_ack; 
 	struct noeud* node=(struct noeud*)creer_noeud();
    
 	init_noeud(node,_list_a->count);   

@@ -27,8 +27,8 @@ int   port_meuble;
    
    int  clilen;
    char buffer[COMMAND_SIZE];
-   struct sockaddr_in serv_addr, cli_addr;
-   int n, pid;
+   struct sockaddr_in  cli_addr;
+   //int n;
    
    init_pppx(&ip_meuble,&port_meuble,&port_pppx);
    while(init_sock_server(&sock_listen_command,port_pppx)<0)
@@ -87,7 +87,7 @@ int   port_meuble;
    }
 	
    command[n] = '\0';
-   printf("\r\nCOLLECTEUR ===> PPPX : '%s'\r\n",command);
+   printf("\r\nCOLLECTEUR ==> '%s' ===> PPPX\r\n",command);
 
    if (strcmp(command,RE_INIT)==0)
         return; 
@@ -98,23 +98,57 @@ int   port_meuble;
 
    //on construit une réponse dynamiquement en fonction de la commande
    //
-   command[0] ='#';
-   command[1] ='R';
-   command[2] ='0';
-   command[3] ='0';
-   command[7]='1';
-   command[8]='2';
-   command[9]='3';
-   command[10]='1';
-   command[11]=';';
-   command[12]='\0';
-				
+   if (command[0]=='#')
+   {
+   	command[0] ='#';
+   	command[1] ='R';
+   	command[2] ='0';
+   	command[3] ='0';
+   	command[7]='1';
+   	command[8]='2';
+   	command[9]='3';
+   	command[10]='1';
+   	command[11]=';';
+   	command[12]='\0';
+   
+   }else if (command[4]=='#')
+   {
+   	command[0] ='#';
+   	command[1] ='R';
+   	command[2] ='0';
+   	command[3] ='0';
+   	
+        command[4] =command[8];
+   	command[5] =command[9];
+   	command[6] =command[10];
+   	
+        command[7]='1';
+   	command[8]='2';
+   	command[9]='3';
+   	command[10]='1';
+   	command[11]=';';
+   	command[12]='\0';
+   } 	
+  
+   do {
+   n = send(sock,command,ACK_SIZE,0);
+   sleep(T_SEND);
+   }
+   while(n<ACK_SIZE && n>0);
+   
+   if (n<=0)
+	*clientDiscon=true;
+   else
+        printf("\r\nPPPX ===> '%s' ===>COLLECTEUR\r\n",command);
+  
+   //sleep(T_SEND);
+   command[3] ='A';
+
    n = send(sock,command,ACK_SIZE,0);
    if (n<0)
 	*clientDiscon=true;
    else
-        printf("\r\nPPPX ===>COLLECTEUR : '%s'\r\n",command);
-   // sleep(T_SEND);
+        printf("\r\nPPPX ===> '%s' ===>COLLECTEUR\r\n",command);
 				
  }	
  
