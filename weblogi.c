@@ -11,7 +11,12 @@
   #include "defs.h"
   #include "sock.h"
   #include "init.h"
-  
+
+  #define CLOG_MAIN
+  #include "clog.h"
+ 
+ const int MY_LOGGER = 0; /* Unique identifier for logger */
+ 
  int sock_send_command=0;
  int   port_pppx; 
  int   port_collecteur; 
@@ -348,6 +353,16 @@
   char header_message[BUFFER_SENT];
   int main(int argc, char *argv[])
 {
+    int r=0;
+    /* Initialize the logger */
+    r = clog_init_path(MY_LOGGER, "weblogi_log.txt");
+    if (r != 0) {
+        fprintf(stderr, "Logger initialization failed.\n");
+        return NULL;
+    }
+    /* Set minimum log level to info (default: debug) */
+   clog_set_level(MY_LOGGER, CLOG_INFO);
+   //clog_info(CLOG(MY_LOGGER),"Thread listener-command créé avec succés");
     int sockfd = 0, n = 0;
     char recvBuff[ACK_SIZE];
     struct sockaddr_in serv_addr; 
@@ -356,13 +371,13 @@
     char* serverName="COLLECTEUR";
     while(init_sock_client(&sock_send_command,ip_collecteur,port_collecteur,serverName)<0)
     {
-   	printf("\r\nErreur création de socket client sur le port :%d\r\n",port_collecteur);
+   	fprintf(stderr,"Erreur création de socket client sur le port :%d",port_collecteur);
 	sleep(T_CON);  
     }
     int index=0;
     int nb_case=sizeof(scenario)/sizeof(scenario[0]);
-    printf("\r\nConnexion au serveur '%s' sur le port %d  réussie\r\n",serverName,port_collecteur);
-    printf("\r\nnombre de commandes à émettre en boucle : %d\r\n",nb_case);
+    clog_info(CLOG(MY_LOGGER),"Connexion au serveur '%s' sur le port %d  réussie",serverName,port_collecteur);
+    clog_info(CLOG(MY_LOGGER),"nombre de commandes à émettre en boucle : %d",nb_case);
     while(1)
     {
     	int size_message=0; 
@@ -372,11 +387,11 @@
 
 
 	if ((send(sock_send_command,message, size_message,0))== -1) {
-            printf("\r\nEchec d'envoi du message '%s'\n",message);
+            fprintf(stderr,"Echec d'envoi du message '%s'",message);
 	    exit(1);
     	}
     	 else {
-         printf("\r\nWL ===> '%s'\n",message);
+         clog_info(CLOG(MY_LOGGER),"WL ===> '%s'",message);
     	}
 
 	//sleep(T_READ);
@@ -384,11 +399,11 @@
     		memset(recvBuff, '\0',ACK_SIZE);
 	    	n = read(sock_send_command, recvBuff,ACK_SIZE );
        		recvBuff[n] = '\0';
-	        printf("\r\n'%s'<=== COLLECTEUR\r\n",recvBuff);
+	        clog_info(CLOG(MY_LOGGER),"'%s'<=== COLLECTEUR",recvBuff);
 
     		if(n < 0)
     		{
-        		printf("\r\nErreur de lecture\r\n");
+        		fprintf(stderr,"Erreur de lecture");
     		}
  	}
 
