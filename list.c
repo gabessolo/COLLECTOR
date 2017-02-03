@@ -36,7 +36,7 @@
 		//mise à jour du nombre de noeud total
 		_list->count++;
 	}           
-        printf("\r\nadd  list(%p)[count:%d][noeud:%p][index:%d][commande/ack:%s/%s]\r\n",_list,_list->count,_noeud,_noeud->index,_noeud->data->commande,_noeud->data->ack);
+ //       printf("\r\nadd  list(%p)[count:%d][noeud:%p][index:%d][commande/ack:%s/%s]\r\n",_list,_list->count,_noeud,_noeud->index,_noeud->data->commande,_noeud->data->ack);
 	return true;
  }
 
@@ -135,7 +135,7 @@
 		{
 		    _noeud=curseur;
 		   
-		    printf("\r\nSearch [%d] = cmd : %s - ack : %s\r\n",*searchNode,_noeud->data->commande,_noeud->data->ack);
+		//    printf("\r\nSearch [%d] = cmd : %s - ack : %s\r\n",*searchNode,_noeud->data->commande,_noeud->data->ack);
 		    *searchNode=*searchNode+1;	
                     break; 
 		    

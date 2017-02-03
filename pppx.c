@@ -10,30 +10,41 @@
  #include "pppx.h" 
  #include "sock.h" 
 
+ #define CLOG_MAIN
+ #include "clog.h"
+ 
+ const int MY_LOGGER = 0; /* Unique identifier for logger */
 
  char command[BUFFER_RECV];
 
-
  static int sock_listen_command=0;
 
-int   port_pppx; 
-int   port_collecteur; 
-char* ip_pppx;
-char* ip_meuble;
-int   port_meuble;
+ int   port_pppx; 
+ int   port_collecteur; 
+ char* ip_pppx;
+ char* ip_meuble;
+ int   port_meuble;
  void* listener(void* param)
  {
-   printf("\r\nThread listener-command créé avec succés\r\n");
+    int r=0;
+    /* Initialize the logger */
+    r = clog_init_path(MY_LOGGER, "pppx_log.txt");
+    if (r != 0) {
+        fprintf(stderr, "Logger initialization failed.\n");
+        return NULL;
+    }
+    /* Set minimum log level to info (default: debug) */
+   clog_set_level(MY_LOGGER, CLOG_INFO);
+   //clog_info(CLOG(MY_LOGGER),"Thread listener-command créé avec succés");
    
    int  clilen;
    char buffer[COMMAND_SIZE];
    struct sockaddr_in  cli_addr;
-   //int n;
    
    init_pppx(&ip_meuble,&port_meuble,&port_pppx);
    while(init_sock_server(&sock_listen_command,port_pppx)<0)
    {
-   	printf("\r\nErreur création de socket d'écoute sur le port :%d\r\n",port_pppx);
+   	fprintf(stderr,"Erreur création de socket d'écoute sur le port :%d",port_pppx);
 	sleep(T_CON);  
    }
   
@@ -43,7 +54,7 @@ int   port_meuble;
     *             * for the incoming connection
     *                */
    
-   printf("\r\nécoute les commandes sur le  port:%d\r\n",port_pppx);
+   //clog_info(CLOG(MY_LOGGER),"écoute les commandes sur le  port:%d",port_pppx);
    listen(sock_listen_command,MAX_CLIENTS_PPPX);
    clilen = sizeof(cli_addr);
 
@@ -51,13 +62,13 @@ int   port_meuble;
    int searchNode=0; /* recherche la prochaine commande et en déduit la réponse dynamiquement */
    while (true) 
    {
-      printf("\r\nAttente de connexion\r\n");
+      //clog_info(CLOG(MY_LOGGER),"Attente de connexion");
       int newsockfd = accept(sock_listen_command, (struct sockaddr *) &cli_addr, &clilen);
-      printf("\r\nNouvelle Connexion: %d\r\n",nb_connect);
+      //clog_info(CLOG(MY_LOGGER),"Nouvelle Connexion: %d",nb_connect);
 		
       if (newsockfd < 0) {
-         printf("\r\nErreur de connexion\r\n");
-         exit(1);
+         fprintf(stderr,"Erreur de connexion");
+         return NULL;
       }
 
       bool clientDiscon=false;
@@ -68,26 +79,27 @@ int   port_meuble;
       	doprocessing_pppx(newsockfd,&searchNode,&clientDiscon);
       }
 
-      printf("\r\nfin de traîtement du client: %d\r\n",nb_connect++);
+      //clog_info(CLOG(MY_LOGGER),"fin de traîtement du client: %d",nb_connect++);
 		
    } /* end of while */
+   clog_free(MY_LOGGER);
  }
 
 
  void doprocessing_pppx (int sock,int* searchNode,bool* clientDiscon) {
    
    int n=0;
-   printf("\r\nAttente d'une commande\r\n");
+   //clog_info(CLOG(MY_LOGGER),"Attente d'une commande");
    memset(command, '0',BUFFER_RECV);
    n = read(sock,command,BUFFER_RECV);
    if (n==0) { 
 	*clientDiscon=true;
-	printf("\r\nErreur de lecture sur socket\r\n");
+	fprintf(stderr,"Erreur de lecture sur socket");
         return; 
    }
 	
    command[n] = '\0';
-   printf("\r\nCOLLECTEUR ==> '%s' ===> PPPX\r\n",command);
+   clog_info(CLOG(MY_LOGGER),"C ==> '%s'==> P",command);
 
    if (strcmp(command,RE_INIT)==0)
         return; 
@@ -139,7 +151,7 @@ int   port_meuble;
    if (n<=0)
 	*clientDiscon=true;
    else
-        printf("\r\nPPPX ===> '%s' ===>COLLECTEUR\r\n",command);
+        clog_info(CLOG(MY_LOGGER),"P ==> '%s' ==> C",command);
   
    //sleep(T_SEND);
    command[3] ='A';
@@ -148,7 +160,7 @@ int   port_meuble;
    if (n<0)
 	*clientDiscon=true;
    else
-        printf("\r\nPPPX ===> '%s' ===>COLLECTEUR\r\n",command);
+        clog_info(CLOG(MY_LOGGER),"P ==> '%s' ==> C",command);
 				
  }	
  
@@ -157,14 +169,14 @@ int   port_meuble;
 
   int err = pthread_create(&(tid[LISTEN_COM]), NULL, &listener, NULL);
   if (err != 0)
-     printf("\r\nErreur lors de la création du thread LISTENER :[%s]\r\n", strerror(err));
+     fprintf(stderr,"Erreur lors de la création du thread LISTENER :[%s]", strerror(err));
   
   //err = pthread_create(&(tid[SEND_ACK]), NULL, &sender, NULL);
   //if (err != 0)
   //   printf("\r\ncan't create thread SENDER :[%s]\r\n", strerror(err));
 
   if(pthread_join(tid[LISTEN_COM], NULL)) {
-     printf("\r\nErreur lors de la synchro\r\n");
+     fprintf(stderr,"Erreur lors de la synchro");
 	return ;
   }
   

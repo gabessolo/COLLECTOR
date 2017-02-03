@@ -349,7 +349,7 @@
   int main(int argc, char *argv[])
 {
     int sockfd = 0, n = 0;
-    char recvBuff[12];
+    char recvBuff[ACK_SIZE];
     struct sockaddr_in serv_addr; 
 
     ip_collecteur=init_collecteur(&ip_pppx,&port_pppx,&port_collecteur);
@@ -381,7 +381,7 @@
 
 	//sleep(T_READ);
 	{	
-    		memset(recvBuff, 0,ACK_SIZE);
+    		memset(recvBuff, '\0',ACK_SIZE);
 	    	n = read(sock_send_command, recvBuff,ACK_SIZE );
        		recvBuff[n] = '\0';
 	        printf("\r\n'%s'<=== COLLECTEUR\r\n",recvBuff);

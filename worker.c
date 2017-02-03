@@ -9,6 +9,12 @@
  #include "defs.h"
  #include "sock.h"
 
+ #define CLOG_MAIN
+ #include "clog.h"
+ 
+
+ const int MY_LOGGER = 0; /* Unique identifier for logger */
+ 
  char message[BUFFER_SENT];  //20 messages max + message extinction
  char header_message[BUFFER_SENT];
 
@@ -90,16 +96,16 @@ int   port_meuble;
    init_collecteur(&ip_pppx,&port_pppx,&port_collecteur);
    while(init_sock_server(&sock_listen_command,port_collecteur)<0)
    {
-   	printf("\r\nErreur de création de la socket d'écoute sur le port:%d\r\n",port_collecteur);
+   	fprintf(stderr,"Erreur de création de la socket d'écoute sur le port:%d",port_collecteur);
 	sleep(T_CON);  
    }
 
-   printf("\r\nécoute les commandes sur le  port : %d\r\n",port_collecteur);
+   //printf("écoute les commandes sur le  port : %d",port_collecteur);
    if (list_commands==NULL)
 	list_commands=(struct list*)creer_list();
 	
    if (list_commands==NULL) {
-      printf("\r\nErreur à la création de la liste des commandes\r\n");
+      fprintf(stderr,"Erreur à la création de la liste des commandes");
       return;
    }
   
@@ -113,15 +119,15 @@ int   port_meuble;
    while (true) 
    {
       sock_send_ack = accept(sock_listen_command, (struct sockaddr *) &cli_addr, &clilen);
-      printf("\r\nnb_connect: %d\r\n",nb_connect);
+      //printf("\r\nnb_connect: %d\r\n",nb_connect);
 		
       if (sock_listen_command < 0) {
-         printf("\r\nErreur connexion\r\n");
+         fprintf(stderr,"Erreur connexion");
       	 continue;
       }
        
       collect_command(sock_send_ack);
-      printf("\r\nfin de traîtement du client:%d\r\n",nb_connect++);
+      //printf("\r\nfin de traîtement du client:%d\r\n",nb_connect++);
 		
    } /* end of while */
  }
@@ -132,17 +138,17 @@ int   port_meuble;
    //bzero(command,SIZE_BUFFER_RECV);
    bool clientDiscon=false;
    do {
-   	printf("\r\nAttente d'une commande\r\n");
+   	//printf("\r\nAttente d'une commande\r\n");
    	memset(command, '0',COMMAND_SIZE);
     	n = read(sock_command,command,COMMAND_SIZE);
 	if (n==0) { 
 	clientDiscon=true;
-	printf("\r\nErreur de lecture sur socket\r\n");
+	fprintf(stderr,"Erreur de lecture sur socket");
         continue; 
 	}
 	
 	command[n] = '\0';
-	printf("\r\nWL ===> '%s'\r\n",command);
+	clog_info(CLOG(MY_LOGGER),"WL ===> '%s'",command);
 
 	if (strcmp(command,RE_INIT)==0)
 		continue;
@@ -173,7 +179,7 @@ int   port_meuble;
 		list_ack=(struct list*)creer_list();
 	
 	  if (list_ack==NULL) {
-	      printf("\r\nErreur à la  création de la liste des ACK\r\n");
+	      fprintf(stderr,"Erreur à la  création de la liste des ACK");
 	  }
 	
 	 struct list* _list_a=list_ack;      /* contient tous les ack en provenance du meuble via la passerelle */
@@ -198,10 +204,10 @@ int   port_meuble;
 					{
 						int n = send(sock_send_ack,_noeud->data->ack,ACK_SIZE,0);
  						if (n <= 0) {
-						    printf("\r\nErreur écriture de socket\r\n");
+						    fprintf(stderr,"Erreur écriture de socket");
 						    serverDiscon=true;
 						}
-				   		printf("\r\nCOLLECTEUR  ===> '%s'\r\n",_noeud->data->ack);
+				   		clog_info(CLOG(MY_LOGGER),"C  ===> '%s'",_noeud->data->ack);
 					}
 
 				}
@@ -226,7 +232,7 @@ int   port_meuble;
 	list_commands=(struct list*)creer_list();
 	
   if (list_commands==NULL) {
-      printf("\r\nErreur à la création de la liste des commandes\r\n");
+      fprintf(stderr,"Erreur à la création de la liste des commandes");
       return;
   }
 
@@ -236,7 +242,7 @@ int   port_meuble;
 		sleep(T_CON);
 
         sock_listen_ack=sock_send_command;  
-  	printf("\r\nConnexion réussie sur le serveur '%s'-ip:'%s' port:%d\r\n",serverName,ip_pppx,port_pppx);
+  	//printf("Connexion réussie sur le serveur '%s'-ip:'%s' port:%d",serverName,ip_pppx,port_pppx);
 
    	struct list* _list_c=list_commands;
    	int index=0; /* index prochaine commande à envoyer à pppx*/
@@ -330,10 +336,10 @@ int   port_meuble;
                                 strcpy(command,_noeud->data->commande);	
 				if ((send(sock_send_command,command,COMMAND_SIZE,0))
 					== -1) {
-					 printf("\r\nEchec émission commande Simple\n");
+					 fprintf(stderr,"Echec émission commande Simple");
 					 clientDiscon=true;
 				}else
-				printf("\r\nCOLLECTEUR ==> émission SIMPLE:[%d]'%s'\r\n",
+				clog_info(CLOG(MY_LOGGER),"C ==> [%d]'%s'",
 				index,_noeud->data->commande);
 
 				}
@@ -342,7 +348,7 @@ int   port_meuble;
 			////nécessite une commande groupée
 			}else if (nb_commandes>1)
 			{
-				printf("\r\ncollecteur %d commandes à grouper\r\n",nb_commandes);
+				//printf("\r\ncollecteur %d commandes à grouper\r\n",nb_commandes);
 				//crée un message groupé
 				//dialogue avec pppx
 				//
@@ -403,11 +409,11 @@ int   port_meuble;
 			       	group_message[23+4+16*(jMessage-1)]='\0';	
 
 			if ((send(sock_send_command,group_message,strlen(group_message) ,0))== -1) {
-				 printf("\r\nEchec d'envoi Group command\r\n");
+				 fprintf(stderr,"Echec d'envoi Group command");
 				 clientDiscon=true;
 			}
 			else {
-				 printf("\r\nCOLLECTEUR ===> '%s' ===>PPPX\r\n",group_message);
+				 clog_info(CLOG(MY_LOGGER),"C ===> '%s'===> P",group_message);
     			}
 
 			
@@ -422,26 +428,37 @@ int   port_meuble;
  void  creat_threads()
  {
 
+   int r=0;
+    /* Initialize the logger */
+   r = clog_init_path(MY_LOGGER, "collecteur_log.txt");
+   if (r != 0) {
+       fprintf(stderr, "Logger initialization failed.\n");
+       return NULL;
+   }
+   /* Set minimum log level to info (default: debug) */
+   clog_set_level(MY_LOGGER, CLOG_INFO);
+   clog_info(CLOG(MY_LOGGER),"Thread listener-command créé avec succés");
+  
   ///////////////    threads creation
   //
   int err = pthread_create(&(tid[LISTEN_COM]), NULL, &listener_command, NULL);
   if (err != 0)
-     printf("\r\ncan't create thread LISTEN-COMMAND :[%s]\r\n", strerror(err));
+     fprintf(stderr,"can't create thread LISTEN-COMMAND :[%s]", strerror(err));
   sleep(T_CREAT);
   
   err = pthread_create(&(tid[SEND_COM]), NULL, &sender_command, NULL);
   if (err != 0)
-     printf("\r\ncan't create thread SEND-COM :[%s]\r\n", strerror(err));
+     fprintf(stderr,"can't create thread SEND-COM :[%s]", strerror(err));
   sleep(T_CREAT);
   
   err = pthread_create(&(tid[LISTEN_ACK]), NULL, &listener_ack, NULL);
   if (err != 0)
-     printf("\r\ncan't create thread LISTEN-ACK :[%s]\r\n", strerror(err));
+     fprintf(stderr,"can't create thread LISTEN-ACK :[%s]", strerror(err));
   sleep(T_CREAT);
   
   err = pthread_create(&(tid[SEND_ACK]), NULL, &sender_ack, NULL);
   if (err != 0)
-     printf("\r\ncan't create thread SEND-ACK :[%s]\r\n", strerror(err));
+     fprintf(stderr,"can't create thread SEND-ACK :[%s]", strerror(err));
   sleep(T_CREAT);
   
   
@@ -449,21 +466,22 @@ int   port_meuble;
   //////////////// wait until threads ends
   
   if(pthread_join(tid[LISTEN_ACK], NULL)) {
-     printf("\r\nError joining thread LISTEN-ACK\r\n");
+     fprintf(stderr,"Error joining thread LISTEN-ACK");
 	return ;
   } 
   if(pthread_join(tid[LISTEN_COM], NULL)) {
-     printf("\r\nError joining thread LISTEN-COM\r\n");
+     fprintf(stderr,"Error joining thread LISTEN-COM");
 	return ;
   }
   if(pthread_join(tid[SEND_ACK], NULL)) {
-     printf("\r\nError joining thread SEND-ACK\r\n");
+     fprintf(stderr,"Error joining thread SEND-ACK");
 	return ;
   }
   if(pthread_join(tid[SEND_COM], NULL)) {
-     printf("\r\nError joining thread SEND-COM\r\n");
+     fprintf(stderr,"Error joining thread SEND-COM");
 	return ;
   }
+   clog_free(MY_LOGGER);
  }
 
 void doprocessing_listener_ack ()
@@ -471,7 +489,7 @@ void doprocessing_listener_ack ()
   // sock_listen_ack=sock_send_command;
 
    if (sock_listen_ack<=0){  
-      printf("\r\nErreur à la création de sock_listen_ack\r\n");
+      fprintf(stderr,"Erreur à la création de sock_listen_ack");
       return;
    }
  
@@ -479,7 +497,7 @@ void doprocessing_listener_ack ()
 	list_ack=(struct list*)creer_list();
 	
    if (list_ack==NULL) {
-      printf("\r\nErreur à la  création de la liste des ACK\r\n");
+      fprintf(stderr,"Erreur à la  création de la liste des ACK");
    }
   
    struct list* _list_a=list_ack;   
@@ -493,17 +511,17 @@ void doprocessing_listener_ack ()
    //bzero(command,SIZE_BUFFER_RECV);
    bool clientDiscon=false;
    do {
-   	printf("\r\nAttente du prochain ACK\r\n");
+   	//printf("\r\nAttente du prochain ACK\r\n");
    	memset(ack, '0',ACK_SIZE);
     	n = read(sock_ack,ack,ACK_SIZE);
 	if (n==0) { 
 	clientDiscon=true;
-	printf("\r\nErreur lecture socket ACK \r\n");
+	fprintf(stderr,"Erreur lecture socket ACK");
 	continue;
         }
 	
 	ack[n] = '\0';
-	printf("\r\nPPPX ===> '%s'\r\n",ack);
+	clog_info(CLOG(MY_LOGGER),"P ===> '%s'",ack);
    
 
 	if (strcmp(ack,"0005COMOK")==0)
@@ -521,7 +539,7 @@ void doprocessing_listener_ack ()
 	{
    		pthread_mutex_lock(&(_list_a->mutex));
 	   	ajouter_noeud(_list_a,node);	  
-	   	printf("\r\nThread listener-ack ADD :%s\r\n",ack);
+	   	//printf("\r\nThread listener-ack ADD :%s\r\n",ack);
 		pthread_mutex_unlock(&(_list_a->mutex));
         }
    }
