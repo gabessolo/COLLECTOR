@@ -26,16 +26,6 @@
  int   port_meuble;
  
 
- const char* scenario[]={
-	"#E00008A13A000000001ZZ;",
-        "#E00001A23A000000001ZZ;",
-	"#E00004A33A000000001ZZ;",
-        "#E00002A43A000000001ZZ;",
-        "#E00007A23A000000001ZZ;",
-        "#E00009A33A000000001ZZ;",
-        "#E00003A13A000000001ZZ;",
-        "#E00006A23A000000001ZZ;",
-        "#E00005A13A000000001ZZ;"};
 /*	
        // "SIGNEDEVIE",
         "#E00000E73A000000001ZZ;",
@@ -348,9 +338,25 @@
 	"#E00020A13A000000001ZZ;"
   };
 */
+ 
+const char* scenario[]={
+	"#E00008A13A000000001ZZ;",
+        "#E00001A23A000000001ZZ;",
+	"#E00004A33A000000001ZZ;",
+        "#E00002A43A000000001ZZ;",
+        "#E00007A23A000000001ZZ;",
+        "#E00009A33A000000001ZZ;",
+        "#E00003A13A000000001ZZ;",
+        "#E00006A23A000000001ZZ;",
+        "#E00005A13A000000001ZZ;"
+  };
+
+  int _index=0;
+  int nb_case=sizeof(scenario)/sizeof(scenario[0]);
 
   char message[BUFFER_SENT];  //20 messages max + message extinction
   char header_message[BUFFER_SENT];
+
   int main(int argc, char *argv[])
 {
     int r=0;
@@ -374,42 +380,42 @@
    	fprintf(stderr,"Erreur création de socket client sur le port :%d",port_collecteur);
 	sleep(T_CON);  
     }
-    int index=0;
-    int nb_case=sizeof(scenario)/sizeof(scenario[0]);
+
+    
+
     clog_info(CLOG(MY_LOGGER),"Connexion au serveur '%s' sur le port %d  réussie",serverName,port_collecteur);
     clog_info(CLOG(MY_LOGGER),"nombre de commandes à émettre en boucle : %d",nb_case);
+    
     while(1)
     {
     	int size_message=0; 
-        size_message=strlen(scenario[index]);
+        size_message=strlen(scenario[_index]);
         memset(message,'\0',size_message); 
-        sprintf(message,"%s",scenario[index]);
+        sprintf(message,"%s",scenario[_index]);
 
 
 	if ((send(sock_send_command,message, size_message,0))== -1) {
             fprintf(stderr,"Echec d'envoi du message '%s'",message);
 	    exit(1);
     	}
-    	 else {
-         clog_info(CLOG(MY_LOGGER),"WL ===> '%s'",message);
+    	else {
+	    clog_info(CLOG(MY_LOGGER),"WL ===> '%s'[_index:%d]",message,_index++);
     	}
 
 	//sleep(T_READ);
-	{	
-    		memset(recvBuff, '\0',ACK_SIZE);
-	    	n = read(sock_send_command, recvBuff,ACK_SIZE );
-       		recvBuff[n] = '\0';
-	        clog_info(CLOG(MY_LOGGER),"'%s'<=== COLLECTEUR",recvBuff);
+    	memset(recvBuff, '0',2*ACK_SIZE);
+    	n = read(sock_send_command, recvBuff,2*ACK_SIZE );
+        recvBuff[n] = '\0';
+	clog_info(CLOG(MY_LOGGER),"'%s'<=== COLLECTEUR",recvBuff);
 
-    		if(n < 0)
-    		{
-        		fprintf(stderr,"Erreur de lecture");
-    		}
- 	}
+    	if(n < 0)
+    	{
+        	fprintf(stderr,"Erreur de lecture");
+    	}
 
-        index++;
-        if (index>=nb_case)
-       	 index=0;
+        
+	if (_index >= nb_case)
+       	    _index = 0;
 
 	//sleep(T_SEND);
     }

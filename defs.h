@@ -19,9 +19,10 @@
 // #define IP_WL	        "172.18.128.8"
  //#define IP_WL	        "127.0.0.1"
  
-#define PORT_PPPX		39000
- #define PORT_COLLECTEUR	5000
  #define PORT_MEUBLE		2101
+#define PORT_PPPX	        PORT_MEUBLE	
+ //#define PORT_COLLECTEUR	5000
+ #define PORT_COLLECTEUR	39000
  //#define IP_COLLECTEUR        "172.18.128.8"
  #define IP_COLLECTEUR	        "127.0.0.1"
  #define IP_MEUBLE	        "127.0.0.1"
@@ -30,7 +31,7 @@
  #define ACK_SIZE     		12
  #define SIGNEDEVIE_SIZE     	10
  #define COMOK_SIZE     	9
- #define BUFFER_SENT	BUFFER_RECV 
+ #define BUFFER_SENT	COMMAND_SIZE 
 
  #define RE_INIT	       "#E00000E73A000000001ZZ;"
  

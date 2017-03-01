@@ -22,7 +22,7 @@
 
  char ack[ACK_SIZE];
  char command[BUFFER_RECV];
- char message[BUFFER_RECV];
+ //char message[BUFFER_RECV];
 
  char buffer[COMMAND_SIZE];
  

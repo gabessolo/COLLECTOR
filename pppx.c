@@ -90,16 +90,15 @@
    
    int n=0;
    //clog_info(CLOG(MY_LOGGER),"Attente d'une commande");
-   memset(command, '0',BUFFER_RECV);
-   n = read(sock,command,BUFFER_RECV);
+   memset(command, '\0',GROUP_MESSAGE_SIZE);
+   n = read(sock,command,COMMAND_SIZE); //Lit une commande simple
    if (n==0) { 
 	*clientDiscon=true;
 	fprintf(stderr,"Erreur de lecture sur socket");
         return; 
    }
-	
+
    command[n] = '\0';
-   clog_info(CLOG(MY_LOGGER),"C ==> '%s'==> P",command);
 
    if (strcmp(command,RE_INIT)==0)
         return; 
@@ -107,7 +106,13 @@
    if (strcmp(command,"SIGNEDEVIE")==0)
         return; 
 
+   if (command[4]=='#')	 //Lit une commande groupée
+   {
+   	n =n+ read(sock,command+n,GROUP_MESSAGE_SIZE-COMMAND_SIZE);
+   	command[n] = '\0';
+   }
 
+   clog_info(CLOG(MY_LOGGER),"C ==> '%s'==> P",command);
    //on construit une réponse dynamiquement en fonction de la commande
    //
    if (command[0]=='#')
@@ -144,7 +149,7 @@
   
    do {
    n = send(sock,command,ACK_SIZE,0);
-   sleep(T_SEND);
+   //sleep(T_SEND);
    }
    while(n<ACK_SIZE && n>0);
    
@@ -156,12 +161,16 @@
    //sleep(T_SEND);
    command[3] ='A';
 
+   do {
    n = send(sock,command,ACK_SIZE,0);
-   if (n<0)
+   //sleep(T_SEND);
+   }
+   while(n<ACK_SIZE && n>0);
+   
+   if (n<=0)
 	*clientDiscon=true;
    else
         clog_info(CLOG(MY_LOGGER),"P ==> '%s' ==> C",command);
-				
  }	
  
  void  creat_threads()
