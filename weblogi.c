@@ -402,9 +402,9 @@ const char* scenario[]={
 	    clog_info(CLOG(MY_LOGGER),"WL ===> '%s'[_index:%d]",message,_index++);
     	}
 
-	//sleep(T_READ);
-    	memset(recvBuff, '0',2*ACK_SIZE);
-    	n = read(sock_send_command, recvBuff,2*ACK_SIZE );
+	sleep(T_READ);
+    	memset(recvBuff, '0',ACK_SIZE);
+    	n = read(sock_send_command, recvBuff,ACK_SIZE );
         recvBuff[n] = '\0';
 	clog_info(CLOG(MY_LOGGER),"'%s'<=== COLLECTEUR",recvBuff);
 
@@ -417,7 +417,7 @@ const char* scenario[]={
 	if (_index >= nb_case)
        	    _index = 0;
 
-	//sleep(T_SEND);
+	sleep(T_SEND);
     }
     close(sockfd);
 

@@ -94,7 +94,7 @@
    n = read(sock,command,COMMAND_SIZE); //Lit une commande simple
    if (n==0) { 
 	*clientDiscon=true;
-	fprintf(stderr,"Erreur de lecture sur socket");
+	fprintf(stderr,"\r\nErreur de lecture sur socket\r\n");
         return; 
    }
 
@@ -104,7 +104,19 @@
         return; 
 	
    if (strcmp(command,"SIGNEDEVIE")==0)
-        return; 
+   {
+   
+   do {
+   n = send(sock,"0005COMOK",9,0);
+   clog_info(CLOG(MY_LOGGER),"C ==> '%s'==> P",command);
+   
+   //sleep(T_SEND);
+   }
+   while(n<9 && n>0);
+   
+   return;
+   
+   }
 
    if (command[4]=='#')	 //Lit une commande groupée
    {
